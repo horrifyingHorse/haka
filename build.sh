@@ -1,0 +1,2 @@
+make
+sudo ./haka.out
