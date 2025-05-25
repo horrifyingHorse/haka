@@ -8,6 +8,8 @@
 
 const size_t BUFSIZE = 100;
 
+void init();
+
 struct keyStatus {
   bool Ctrl;
   bool Alt;
@@ -45,6 +47,8 @@ int initKeyStatus(struct keyStatus** ks);
       break;                     \
   }
 
+int checkPackage(const char* pkgName);
+
 struct IntSet {
   int* set;
   int size;
@@ -53,7 +57,6 @@ struct IntSet {
 int initSet(struct IntSet** set, int capacity);
 int pushSet(struct IntSet* set, int val);
 int dynamicInc(struct IntSet* set);
-int intLen(int n);
 
 void forceSudo();
 int getKbdEvents(struct IntSet** set);

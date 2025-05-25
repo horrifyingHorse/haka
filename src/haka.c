@@ -1,17 +1,18 @@
 #include <dirent.h>
 #include <fcntl.h>
-#include <libevdev-1.0/libevdev/libevdev.h>
-#include <linux/input-event-codes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>
 #include <unistd.h>
+
+#include <libevdev-1.0/libevdev/libevdev.h>
+#include <linux/input-event-codes.h>
+#include <sys/select.h>
 
 #include "haka.h"
 
 int main() {
-  forceSudo();
+  init();
 
   struct libevdev *dev = NULL;
   struct IntSet *set = NULL;
@@ -23,7 +24,7 @@ int main() {
   int fds[set->size], fd;
   struct libevdev *devs[set->size];
   for (int i = 0; i < set->size; i++) {
-    snprintf(kbd, 18 + intLen(set->set[i]), "/dev/input/event%d", set->set[i]);
+    snprintf(kbd, BUFSIZE, "/dev/input/event%d", set->set[i]);
     printf("Opening: %s\n", kbd);
 
     fd = open(kbd, O_RDONLY | O_NONBLOCK);
@@ -196,14 +197,6 @@ int dynamicInc(struct IntSet *set) {
   return 0;
 }
 
-int intLen(int n) {
-  int count = 1;
-  while ((n /= 10) != 0) {
-    count++;
-  }
-  return count;
-}
-
 void forceSudo() {
   if (!getuid()) {
     return;
@@ -232,4 +225,30 @@ int initKeyStatus(struct keyStatus **ks) {
   (*ks)->Alt = false;
   (*ks)->C = false;
   return 0;
+}
+
+int checkPackage(const char *pkgName) {
+  char cmd[512];
+  sprintf(cmd, "which %s > /dev/null 2>&1", pkgName);
+
+  int retVal = system(cmd);
+  if (retVal == -1) {
+    printf("system() failed to execute.");
+    perror("system err: ");
+    exit(1);
+  }
+  if (WEXITSTATUS(retVal) != 0) {
+    printf("Cannot find %s in PATH\n", pkgName);
+    printf("which %s returned %d\n", pkgName, WEXITSTATUS(retVal));
+    return 1;
+  }
+  return 0;
+}
+
+void init() {
+  if (checkPackage("wl-copy") || checkPackage("wl-paste")) {
+    printf("please install wl-clipboard: sudo pacman -S wl-clipboard\n");
+    exit(1);
+  }
+  forceSudo();
 }
