@@ -1,2 +1,3 @@
 make
-sudo ./haka.out
+sudo setcap "cap_setgid=eip" ./haka.out
+./haka.out

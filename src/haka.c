@@ -1,13 +1,14 @@
-#include <dirent.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
+#include <dirent.h>
+#include <fcntl.h>
+#include <grp.h>
 #include <libevdev-1.0/libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
 #include <sys/select.h>
+#include <unistd.h>
 
 #include "haka.h"
 
@@ -16,7 +17,9 @@ int main() {
 
   struct libevdev *dev = NULL;
   struct IntSet *set = NULL;
+  gid_t curGrp;
 
+  switchGrp(&curGrp, "input");
   getKbdEvents(&set);
   printf("------\n");
 
@@ -39,6 +42,8 @@ int main() {
     fds[i] = fd;
     devs[i] = dev;
   }
+
+  switchGrp(&curGrp, NULL);
 
   struct keyStatus *ks;
   initKeyStatus(&ks);
@@ -67,23 +72,35 @@ int main() {
       while (libevdev_next_event(devs[i], LIBEVDEV_READ_FLAG_NORMAL, &ev) ==
                  0 &&
              ev.type == EV_KEY) {
-        printf("Key: %s", libevdev_event_code_get_name(ev.type, ev.code));
+        // printf("Key: %s", libevdev_event_code_get_name(ev.type, ev.code));
         switch (ev.value) {
         case 1:
-          printf(" key down\n");
           setKeyStatus(ks, ev.code);
           break;
 
         case 2:
-          printf(" pressed\n");
           break;
 
         default:
-          printf(" key up %d\n", ev.value);
           resetKeyStatus(ks, ev.code);
         }
+
         if (ks->Ctrl && ks->Alt && ks->C) {
           printf("CTRL + ALT + C detected!\n");
+          printf("Dispatching request to get primary selection\n");
+
+          FILE *fp = popen("wl-paste -p", "r");
+          if (fp == NULL) {
+            perror("popen error.");
+            exit(1);
+          }
+
+          char buf[BUFSIZE];
+          while (fgets(buf, BUFSIZE, fp)) {
+            printf("%s", buf);
+          }
+
+          pclose(fp);
         }
       }
     }
@@ -97,7 +114,6 @@ int main() {
 }
 
 int getKbdEvents(struct IntSet **set) {
-
   DIR *dir = opendir("/dev/input/by-path/");
   if (dir == NULL) {
     perror("Failed to open directory");
@@ -250,5 +266,48 @@ void init() {
     printf("please install wl-clipboard: sudo pacman -S wl-clipboard\n");
     exit(1);
   }
-  forceSudo();
+
+  // forceSudo();
+  //
+  // Cannot be the root user for the entire time of execution
+  // Reason? wl-clipboard. The dependency, even the clipboard
+  // is user dependent. It needs user space vars that are not
+  // inhereted when ran as a root.
+  //
+  // Workaround?
+  // We only need root to access the input devices. This, on
+  // most linux devices, is already available in a group
+  // named "input", (can find by using
+  // `$ ls -l /dev/input/event*` ->
+  // `crw-rw---- 1 root *input* 13, 64....`)
+  // if the proc is in the `input`  grp,  it can  access the
+  // input device.
+  //
+  // refs:
+  // https://suricrasia.online/blog/turning-a-keyboard-into/
+  // capabilities(7)
+  // user_namespaces(7)
+}
+
+void switchGrp(gid_t *curGID, const char *grpnam) {
+  if (grpnam == NULL && curGID != NULL) {
+    if (setgid(*curGID) < 0) {
+      perror("Unable to set grp id");
+      exit(1);
+    }
+    return;
+  }
+
+  struct group *grp = getgrnam(grpnam);
+  if (grp == NULL) {
+    char erStr[BUFSIZE];
+    sprintf(erStr, "Cannot find an `%s` group.", grpnam);
+    perror(erStr);
+    exit(1);
+  }
+  *curGID = getgid();
+  if (setgid(grp->gr_gid) < 0) {
+    perror("Unable to set grp id");
+    exit(1);
+  }
 }

@@ -1,6 +1,7 @@
 #ifndef HAKA_H
 #define HAKA_H
 
+#include <grp.h>
 #include <libevdev-1.0/libevdev/libevdev.h>
 #include <linux/types.h>
 #include <stdbool.h>
@@ -9,6 +10,7 @@
 const size_t BUFSIZE = 100;
 
 void init();
+void switchGrp(gid_t* curGID, const char* grpnam);
 
 struct keyStatus {
   bool Ctrl;
