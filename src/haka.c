@@ -50,6 +50,11 @@ int main() {
   struct input_event ev;
   fd_set fdSet;
   int maxFd = 0;
+  int notes = open("notes.txt", O_RDWR | O_CREAT | O_APPEND, 0666);
+  if (notes < 0) {
+    perror("Cannot open notes.txt");
+    exit(1);
+  }
   while (1) {
     FD_ZERO(&fdSet);
 
@@ -97,7 +102,9 @@ int main() {
 
           char buf[BUFSIZE];
           while (fgets(buf, BUFSIZE, fp)) {
-            printf("%s", buf);
+            buf[strcspn(buf, "\n") + 1] = 0;
+            printf("%ld %s", strlen(buf), buf);
+            write(notes, buf, strlen(buf));
           }
 
           pclose(fp);
@@ -105,6 +112,7 @@ int main() {
       }
     }
   }
+  close(notes);
 
   for (int i = 0; i < set->size; i++) {
     libevdev_free(devs[i]);
