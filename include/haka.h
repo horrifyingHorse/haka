@@ -7,15 +7,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-const size_t BUFSIZE = 100;
+const size_t BUFSIZE = 1024;
 
-void init();
+void init(char* execDir);
 void switchGrp(gid_t* curGID, const char* grpnam);
 
 struct keyStatus {
   bool Ctrl;
   bool Alt;
   bool C;
+  bool M;
 };
 int initKeyStatus(struct keyStatus** ks);
 
@@ -32,6 +33,9 @@ int initKeyStatus(struct keyStatus** ks);
     case KEY_C:                \
       ks->C = true;            \
       break;                   \
+    case KEY_M:                \
+      ks->M = true;            \
+      break;                   \
   }
 
 #define resetKeyStatus(ks, code) \
@@ -46,6 +50,9 @@ int initKeyStatus(struct keyStatus** ks);
       break;                     \
     case KEY_C:                  \
       ks->C = false;             \
+      break;                     \
+    case KEY_M:                  \
+      ks->M = false;             \
       break;                     \
   }
 

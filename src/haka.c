@@ -13,11 +13,23 @@
 #include "haka.h"
 
 int main() {
-  init();
-
+  char execDir[BUFSIZE];
+  char notesDir[BUFSIZE];
+  char notesFil[BUFSIZE * 2];
+  char notesFilNam[BUFSIZE];
+  char tofiCfg[BUFSIZE];
   struct libevdev *dev = NULL;
   struct IntSet *set = NULL;
   gid_t curGrp;
+
+  init(execDir);
+  strcpy(notesFilNam, "notes.txt");
+  strcpy(notesDir, execDir);
+  strcat(notesDir, "/notes");
+  snprintf(notesFil, BUFSIZE * 2, "%s/%s", notesDir, notesFilNam);
+  strcpy(tofiCfg, execDir);
+  strcat(tofiCfg, "/tofi.cfg");
+  printf("Notes Fil: %ld %s\n", strlen(notesFil), notesFil);
 
   switchGrp(&curGrp, "input");
   getKbdEvents(&set);
@@ -47,14 +59,12 @@ int main() {
 
   struct keyStatus *ks;
   initKeyStatus(&ks);
+#define prefixKey(ks) ks->Ctrl && ks->Alt
+#define keyCombo(ks, KEY) prefixKey(ks) && ks->KEY
+
   struct input_event ev;
   fd_set fdSet;
   int maxFd = 0;
-  int notes = open("notes.txt", O_RDWR | O_CREAT | O_APPEND, 0666);
-  if (notes < 0) {
-    perror("Cannot open notes.txt");
-    exit(1);
-  }
   while (1) {
     FD_ZERO(&fdSet);
 
@@ -77,7 +87,9 @@ int main() {
       while (libevdev_next_event(devs[i], LIBEVDEV_READ_FLAG_NORMAL, &ev) ==
                  0 &&
              ev.type == EV_KEY) {
-        // printf("Key: %s", libevdev_event_code_get_name(ev.type, ev.code));
+        // printf("Key: %s\n", libevdev_event_code_get_name(ev.type, ev.code));
+        // fflush(stdout);
+
         switch (ev.value) {
         case 1:
           setKeyStatus(ks, ev.code);
@@ -88,6 +100,42 @@ int main() {
 
         default:
           resetKeyStatus(ks, ev.code);
+          break;
+        }
+
+        if (ks->Ctrl && ks->Alt && ks->M) {
+          printf("CTRL + ALT + M detected!\n");
+          printf("Launching tofi\n");
+          printf("tofi.cfg path: %s\n", tofiCfg);
+
+          char cmd[BUFSIZE * 2], basecmd[BUFSIZE * 2];
+          snprintf(basecmd, BUFSIZE * 2, "ls %s -Ap1 | grep -v / | tofi -c %s",
+                   notesDir, tofiCfg);
+          snprintf(cmd, BUFSIZE * 2,
+                   "%s  --prompt-text=\"  select:  \" "
+                   "--placeholder-text=\"%s\" --require-match=false",
+                   basecmd, notesFilNam);
+
+          printf("Executing: %s\n", cmd);
+          FILE *fp = popen(cmd, "r");
+          if (fp == NULL) {
+            perror("popen error.");
+            exit(1);
+          }
+
+          char buf[BUFSIZE];
+          int selection = 0;
+          while (fgets(buf, BUFSIZE, fp)) {
+            selection = 1;
+            buf[strcspn(buf, "\n")] = 0;
+            printf("Selected: %ld %s\n", strlen(buf), buf);
+            fflush(stdout);
+          }
+          if (selection) {
+            strcpy(notesFilNam, buf);
+            snprintf(notesFil, BUFSIZE * 2, "%s/%s", notesDir, notesFilNam);
+          }
+          pclose(fp);
         }
 
         if (ks->Ctrl && ks->Alt && ks->C) {
@@ -101,18 +149,24 @@ int main() {
           }
 
           char buf[BUFSIZE];
+          int notes = open(notesFil, O_RDWR | O_CREAT | O_APPEND, 0666);
+          if (notes < 0) {
+            char errStr[BUFSIZE];
+            sprintf(errStr, "Cannot open %s", notesFil);
+            perror(errStr);
+            exit(1);
+          }
           while (fgets(buf, BUFSIZE, fp)) {
             buf[strcspn(buf, "\n") + 1] = 0;
             printf("%ld %s", strlen(buf), buf);
             write(notes, buf, strlen(buf));
           }
-
           pclose(fp);
+          close(notes);
         }
       }
     }
   }
-  close(notes);
 
   for (int i = 0; i < set->size; i++) {
     libevdev_free(devs[i]);
@@ -248,6 +302,7 @@ int initKeyStatus(struct keyStatus **ks) {
   (*ks)->Ctrl = false;
   (*ks)->Alt = false;
   (*ks)->C = false;
+  (*ks)->M = false;
   return 0;
 }
 
@@ -269,11 +324,34 @@ int checkPackage(const char *pkgName) {
   return 0;
 }
 
-void init() {
+void init(char *notesDir) {
   if (checkPackage("wl-copy") || checkPackage("wl-paste")) {
     printf("please install wl-clipboard: sudo pacman -S wl-clipboard\n");
     exit(1);
   }
+  if (checkPackage("tofi")) {
+    printf("please install tofi: yay -S tofi\n");
+    exit(1);
+  }
+
+  ssize_t nbytes = readlink("/proc/self/exe", notesDir, BUFSIZE);
+  if (nbytes < 0) {
+    perror("Cannot readlink /proc/self/exe");
+    exit(1);
+  }
+  notesDir[nbytes] = '\0';
+  printf("Readlink: %s\n", notesDir);
+  char *p = &notesDir[nbytes];
+  while (*p != '/') {
+    p--;
+  }
+  size_t len = p - &notesDir[0];
+  if (len <= 0) {
+    printf("Invalid path to binary %s", notesDir);
+    exit(1);
+  }
+  notesDir[len] = '\0';
+  printf("Dir Path: %s\n", notesDir);
 
   // forceSudo();
   //
