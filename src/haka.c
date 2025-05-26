@@ -178,13 +178,18 @@ void getExeDir(struct hakaStatus *haka) {
 }
 
 void getPrevFile(struct hakaStatus *haka) {
-  size_t bytes = 0;
-  strcpy(haka->notesFileName, "notes.txt");
+  strcpy(haka->notesFileName, "notes.txt\0");
+  size_t bytes = strlen(haka->notesFileName);
   sprintf(haka->prevFile, "%s/prevFile.txt", haka->execDir);
 
   haka->fdPrevFile = open(haka->prevFile, O_RDWR, 0666);
   if (haka->fdPrevFile > 0) {
     bytes = read(haka->fdPrevFile, haka->notesFileName, BUFSIZE);
   }
+
+  if (bytes > 0) {
+    haka->notesFileName[bytes] = '\0';
+  }
+
   close(haka->fdPrevFile);
 }
