@@ -11,77 +11,31 @@
 #include <unistd.h>
 
 #include "haka.h"
+#include "hakaEventHandler.h"
+#include "hakaUtils.h"
 
 int main() {
-  char execDir[BUFSIZE];
-  char notesDir[BUFSIZE];
-  char notesFile[BUFSIZE * 2];
-  char notesFilName[BUFSIZE];
-  char tofiCfg[BUFSIZE];
-  char prevFile[BUFSIZE];
-  struct libevdev *dev = NULL;
-  struct IntSet *set = NULL;
+  struct IntSet *set = initIntSet(2);
+  struct hakaStatus *haka = initHaka();
+  struct keyStatus *ks = initKeyStatus();
+
   gid_t curGrp;
-  bool served = false;
-
-  init(execDir);
-
-  sprintf(prevFile, "%s/prevFile.txt", execDir);
-  int fdPrevFile = open(prevFile, O_RDWR, 0666);
-  if (fdPrevFile < 0) {
-    strcpy(notesFilName, "notes.txt");
-  } else {
-    size_t bytes = read(fdPrevFile, notesFilName, BUFSIZE);
-    if (bytes < 0) {
-      strcpy(notesFilName, "notes.txt");
-    }
-  }
-  close(fdPrevFile);
-
-  strcpy(notesDir, execDir);
-  strcat(notesDir, "/notes");
-  snprintf(notesFile, BUFSIZE * 2, "%s/%s", notesDir, notesFilName);
-  strcpy(tofiCfg, execDir);
-  strcat(tofiCfg, "/tofi.cfg");
-  printf("Notes Fil: %ld %s\n", strlen(notesFile), notesFile);
-
   switchGrp(&curGrp, "input");
-  getKbdEvents(&set);
-  printf("------\n");
 
-  char kbd[BUFSIZE];
-  int fds[set->size], fd;
+  getKbdEvents(set);
+  int fds[set->size];
   struct libevdev *devs[set->size];
-  for (int i = 0; i < set->size; i++) {
-    snprintf(kbd, BUFSIZE, "/dev/input/event%d", set->set[i]);
-    printf("Opening: %s\n", kbd);
-
-    fd = open(kbd, O_RDONLY | O_NONBLOCK);
-    if (fd < 0) {
-      perror("Failed to open device");
-      return 1;
-    }
-
-    libevdev_new_from_fd(fd, &dev);
-    printf("Device: %s\n", libevdev_get_name(dev));
-    printf("Listening for key events...\n");
-    fds[i] = fd;
-    devs[i] = dev;
-  }
+  openKbdDevices(set, fds, devs);
 
   switchGrp(&curGrp, NULL);
 
-  struct keyStatus *ks;
-  initKeyStatus(&ks);
-#define prefixKey(ks) ks->Ctrl && ks->Alt
-#define keyCombo(ks, KEY) prefixKey(ks) && ks->KEY
-
-  struct input_event ev;
-  fd_set fdSet;
-  int maxFd = 0;
   while (1) {
+    fd_set fdSet;
+    struct input_event ev;
+
     FD_ZERO(&fdSet);
 
+    int maxFd = 0;
     for (int i = 0; i < set->size; i++) {
       FD_SET(fds[i], &fdSet);
       if (fds[i] > maxFd)
@@ -114,77 +68,16 @@ int main() {
 
         default:
           resetKeyStatus(ks, ev.code);
-          served = false;
+          haka->served = false;
           break;
         }
 
-        if (ks->Ctrl && ks->Alt && ks->M && !served) {
-          printf("CTRL + ALT + M detected!\n");
-          printf("Launching tofi\n");
-          printf("tofi.cfg path: %s\n", tofiCfg);
-
-          char cmd[BUFSIZE * 2], basecmd[BUFSIZE * 2];
-          snprintf(basecmd, BUFSIZE * 2, "ls %s -Ap1 | grep -v / | tofi -c %s",
-                   notesDir, tofiCfg);
-          snprintf(cmd, BUFSIZE * 2,
-                   "%s  --prompt-text=\"  select:  \" "
-                   "--placeholder-text=\"%s\" --require-match=false",
-                   basecmd, notesFilName);
-
-          printf("Executing: %s\n", cmd);
-          FILE *fp = popen(cmd, "r");
-          if (fp == NULL) {
-            perror("popen error.");
-            exit(1);
-          }
-
-          char buf[BUFSIZE];
-          bool selection = false;
-          while (fgets(buf, BUFSIZE, fp)) {
-            selection = true;
-            buf[strcspn(buf, "\n")] = 0;
-            printf("Selected: %ld %s\n", strlen(buf), buf);
-            fflush(stdout);
-          }
-          if (selection) {
-            strcpy(notesFilName, buf);
-            snprintf(notesFile, BUFSIZE * 2, "%s/%s", notesDir, notesFilName);
-            fdPrevFile = open(prevFile, O_TRUNC | O_CREAT | O_WRONLY, 0666);
-            if (fdPrevFile > 0) {
-              write(fdPrevFile, notesFilName, strlen(notesFilName));
-            }
-            close(fdPrevFile);
-          }
-          pclose(fp);
-          served = true;
+        if (keyCombination(ks, M) && !haka->served) {
+          switchFile(haka);
         }
 
-        if (ks->Ctrl && ks->Alt && ks->C && !served) {
-          printf("CTRL + ALT + C detected!\n");
-          printf("Dispatching request to get primary selection\n");
-
-          FILE *fp = popen("wl-paste -p", "r");
-          if (fp == NULL) {
-            perror("popen error.");
-            exit(1);
-          }
-
-          char buf[BUFSIZE];
-          int notes = open(notesFile, O_RDWR | O_CREAT | O_APPEND, 0666);
-          if (notes < 0) {
-            char errStr[BUFSIZE];
-            sprintf(errStr, "Cannot open %s", notesFile);
-            perror(errStr);
-            exit(1);
-          }
-          while (fgets(buf, BUFSIZE, fp)) {
-            buf[strcspn(buf, "\n") + 1] = 0;
-            printf("%ld %s", strlen(buf), buf);
-            write(notes, buf, strlen(buf));
-          }
-          pclose(fp);
-          close(notes);
-          served = true;
+        if (keyCombination(ks, C) && !haka->served) {
+          writeToFile(haka);
         }
       }
     }
@@ -194,159 +87,26 @@ int main() {
     libevdev_free(devs[i]);
     close(fds[i]);
   }
+
   return 0;
 }
 
-int getKbdEvents(struct IntSet **set) {
-  DIR *dir = opendir("/dev/input/by-path/");
-  if (dir == NULL) {
-    perror("Failed to open directory");
+struct keyStatus *initKeyStatus() {
+  struct keyStatus *ks = (struct keyStatus *)malloc(sizeof(struct keyStatus));
+  if (ks == NULL) {
+    perror("Unable to allocate memory for keyStatus.");
     exit(1);
   }
-  printf("ref for /dev/input/by-path/ created @ %p\n", dir);
 
-  *set = NULL;
-  initSet(set, 1);
-  struct dirent *entry = NULL;
+  ks->Ctrl = false;
+  ks->Alt = false;
+  ks->C = false;
+  ks->M = false;
 
-  char symlinkTo[BUFSIZE], absPath[BUFSIZE];
-
-  while ((entry = readdir(dir)) != NULL) {
-    size_t dNameLen = strlen(entry->d_name);
-    if (dNameLen < 9) {
-      continue;
-    }
-
-    char compVal[9];
-    strncpy(compVal, entry->d_name + dNameLen - 9, 9);
-    if (strcmp("event-kbd", compVal) != 0) {
-      continue;
-    }
-
-    strcpy(absPath, "/dev/input/by-path/");
-    strcat(absPath, entry->d_name);
-    ssize_t len = readlink(absPath, symlinkTo, BUFSIZE);
-    if (len == -1) {
-      continue;
-    }
-    symlinkTo[len] = '\0';
-
-    printf("Entry: /dev/input/by-path/%s\t\tis a symlink to -> %s\n",
-           entry->d_name, symlinkTo);
-    pushSet(*set, atoi((symlinkTo + strlen(symlinkTo) - 1)));
-  }
-
-  closedir(dir);
-
-  int size = (*set)->size;
-  printf("eventX is a keyboard Event | X =  ");
-  while (size-- > 0) {
-    printf("%d, ", (*set)->set[size]);
-  }
-  printf("\b\b;\n");
-
-  return 0;
+  return ks;
 }
 
-int initSet(struct IntSet **set, int capacity) {
-  *set = (struct IntSet *)malloc(sizeof(struct IntSet));
-  if (set == NULL) {
-    return 1;
-  }
-  (*set)->size = 0;
-  (*set)->capacity = capacity;
-  (*set)->set = (int *)malloc(sizeof(int) * capacity);
-
-  return 0;
-}
-
-int pushSet(struct IntSet *set, int val) {
-  if (set == NULL) {
-    exit(1);
-  }
-  int size = set->size;
-  while (size-- > 0) {
-    if (val == set->set[size]) {
-      return 1;
-    }
-  }
-
-  if (set->size >= set->capacity) {
-    dynamicInc(set);
-  }
-  set->set[set->size++] = val;
-
-  return 0;
-}
-
-int dynamicInc(struct IntSet *set) {
-  int newCapacity = set->capacity * 2;
-  int *newArr = (int *)malloc(sizeof(int) * newCapacity);
-  if (newArr == NULL) {
-    return 1;
-  }
-
-  int size = set->size;
-  while (size-- >= 0) {
-    newArr[size] = set->set[size];
-  }
-
-  set->capacity = newCapacity;
-  free(set->set);
-  set->set = newArr;
-  return 0;
-}
-
-void forceSudo() {
-  if (!getuid()) {
-    return;
-  }
-  printf("proc no root\nForcing root...\n");
-
-  char buf[100];
-  int rl = readlink("/proc/self/exe", buf, 100);
-  if (rl < 0) {
-    perror("readlink error:");
-    exit(1);
-  }
-  buf[rl] = '\0';
-  int ex = execlp("sudo", "sudo", buf, NULL);
-  printf("Failed to restart application `%s`\n, error: %d", buf, ex);
-  perror("exec failed: ");
-  exit(1);
-}
-
-int initKeyStatus(struct keyStatus **ks) {
-  *ks = (struct keyStatus *)malloc(sizeof(struct keyStatus));
-  if (*ks == NULL) {
-    return 1;
-  }
-  (*ks)->Ctrl = false;
-  (*ks)->Alt = false;
-  (*ks)->C = false;
-  (*ks)->M = false;
-  return 0;
-}
-
-int checkPackage(const char *pkgName) {
-  char cmd[512];
-  sprintf(cmd, "which %s > /dev/null 2>&1", pkgName);
-
-  int retVal = system(cmd);
-  if (retVal == -1) {
-    printf("system() failed to execute.");
-    perror("system err: ");
-    exit(1);
-  }
-  if (WEXITSTATUS(retVal) != 0) {
-    printf("Cannot find %s in PATH\n", pkgName);
-    printf("which %s returned %d\n", pkgName, WEXITSTATUS(retVal));
-    return 1;
-  }
-  return 0;
-}
-
-void init(char *notesDir) {
+struct hakaStatus *initHaka() {
   if (checkPackage("wl-copy") || checkPackage("wl-paste")) {
     printf("please install wl-clipboard: sudo pacman -S wl-clipboard\n");
     exit(1);
@@ -356,24 +116,17 @@ void init(char *notesDir) {
     exit(1);
   }
 
-  ssize_t nbytes = readlink("/proc/self/exe", notesDir, BUFSIZE);
-  if (nbytes < 0) {
-    perror("Cannot readlink /proc/self/exe");
-    exit(1);
-  }
-  notesDir[nbytes] = '\0';
-  printf("Readlink: %s\n", notesDir);
-  char *p = &notesDir[nbytes];
-  while (*p != '/') {
-    p--;
-  }
-  size_t len = p - &notesDir[0];
-  if (len <= 0) {
-    printf("Invalid path to binary %s", notesDir);
-    exit(1);
-  }
-  notesDir[len] = '\0';
-  printf("Dir Path: %s\n", notesDir);
+  struct hakaStatus *haka =
+      (struct hakaStatus *)malloc(sizeof(struct hakaStatus));
+
+  getExeDir(haka);
+  getPrevFile(haka);
+  strCpyCat(haka->notesDir, haka->execDir, "/notes");
+  snprintf(haka->notesFile, BUFSIZE * 2, "%s/%s", haka->notesDir,
+           haka->notesFileName);
+  strCpyCat(haka->tofiCfg, haka->execDir, "/tofi.cfg");
+
+  printf("Notes File: %ld %s\n", strlen(haka->notesFile), haka->notesFile);
 
   // forceSudo();
   //
@@ -395,27 +148,43 @@ void init(char *notesDir) {
   // https://suricrasia.online/blog/turning-a-keyboard-into/
   // capabilities(7)
   // user_namespaces(7)
+
+  return haka;
 }
 
-void switchGrp(gid_t *curGID, const char *grpnam) {
-  if (grpnam == NULL && curGID != NULL) {
-    if (setgid(*curGID) < 0) {
-      perror("Unable to set grp id");
-      exit(1);
-    }
-    return;
+void getExeDir(struct hakaStatus *haka) {
+  ssize_t nbytes = readlink("/proc/self/exe", haka->execDir, BUFSIZE);
+  if (nbytes < 0) {
+    perror("Cannot readlink /proc/self/exe");
+    exit(1);
+  }
+  haka->execDir[nbytes] = '\0';
+  printf("Readlink: %s\n", haka->execDir);
+
+  // Strip off the file name
+  char *p = &haka->execDir[nbytes];
+  while (*p != '/') {
+    p--;
   }
 
-  struct group *grp = getgrnam(grpnam);
-  if (grp == NULL) {
-    char erStr[BUFSIZE];
-    sprintf(erStr, "Cannot find an `%s` group.", grpnam);
-    perror(erStr);
+  size_t len = p - &haka->execDir[0];
+  if (len <= 0) {
+    printf("Invalid path to binary %s", haka->execDir);
     exit(1);
   }
-  *curGID = getgid();
-  if (setgid(grp->gr_gid) < 0) {
-    perror("Unable to set grp id");
-    exit(1);
+  haka->execDir[len] = '\0';
+
+  printf("Dir Path: %s\n", haka->execDir);
+}
+
+void getPrevFile(struct hakaStatus *haka) {
+  size_t bytes = 0;
+  strcpy(haka->notesFileName, "notes.txt");
+  sprintf(haka->prevFile, "%s/prevFile.txt", haka->execDir);
+
+  haka->fdPrevFile = open(haka->prevFile, O_RDWR, 0666);
+  if (haka->fdPrevFile > 0) {
+    bytes = read(haka->fdPrevFile, haka->notesFileName, BUFSIZE);
   }
+  close(haka->fdPrevFile);
 }

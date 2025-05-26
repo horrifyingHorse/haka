@@ -7,10 +7,24 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-const size_t BUFSIZE = 1024;
+#include "hakaBase.h"
 
-void init(char* execDir);
-void switchGrp(gid_t* curGID, const char* grpnam);
+struct hakaStatus {
+  char execDir[BUFSIZE];
+  char notesDir[BUFSIZE];
+  char notesFileName[BUFSIZE];
+  char notesFile[BUFSIZE * 2];
+
+  int fdPrevFile;
+  char prevFile[BUFSIZE];
+  char tofiCfg[BUFSIZE];
+
+  bool served;
+};
+
+struct hakaStatus* initHaka();
+void getExeDir(struct hakaStatus* haka);
+void getPrevFile(struct hakaStatus* haka);
 
 struct keyStatus {
   bool Ctrl;
@@ -18,7 +32,7 @@ struct keyStatus {
   bool C;
   bool M;
 };
-int initKeyStatus(struct keyStatus** ks);
+struct keyStatus* initKeyStatus();
 
 #define setKeyStatus(ks, code) \
   switch (code) {              \
@@ -56,18 +70,6 @@ int initKeyStatus(struct keyStatus** ks);
       break;                     \
   }
 
-int checkPackage(const char* pkgName);
-
-struct IntSet {
-  int* set;
-  int size;
-  int capacity;
-};
-int initSet(struct IntSet** set, int capacity);
-int pushSet(struct IntSet* set, int val);
-int dynamicInc(struct IntSet* set);
-
-void forceSudo();
-int getKbdEvents(struct IntSet** set);
+#define keyCombination(ks, KEY) ks->Ctrl && ks->Alt && ks->KEY
 
 #endif
