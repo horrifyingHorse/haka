@@ -15,21 +15,35 @@
 int main() {
   char execDir[BUFSIZE];
   char notesDir[BUFSIZE];
-  char notesFil[BUFSIZE * 2];
-  char notesFilNam[BUFSIZE];
+  char notesFile[BUFSIZE * 2];
+  char notesFilName[BUFSIZE];
   char tofiCfg[BUFSIZE];
+  char prevFile[BUFSIZE];
   struct libevdev *dev = NULL;
   struct IntSet *set = NULL;
   gid_t curGrp;
+  bool served = false;
 
   init(execDir);
-  strcpy(notesFilNam, "notes.txt");
+
+  sprintf(prevFile, "%s/prevFile.txt", execDir);
+  int fdPrevFile = open(prevFile, O_RDWR, 0666);
+  if (fdPrevFile < 0) {
+    strcpy(notesFilName, "notes.txt");
+  } else {
+    size_t bytes = read(fdPrevFile, notesFilName, BUFSIZE);
+    if (bytes < 0) {
+      strcpy(notesFilName, "notes.txt");
+    }
+  }
+  close(fdPrevFile);
+
   strcpy(notesDir, execDir);
   strcat(notesDir, "/notes");
-  snprintf(notesFil, BUFSIZE * 2, "%s/%s", notesDir, notesFilNam);
+  snprintf(notesFile, BUFSIZE * 2, "%s/%s", notesDir, notesFilName);
   strcpy(tofiCfg, execDir);
   strcat(tofiCfg, "/tofi.cfg");
-  printf("Notes Fil: %ld %s\n", strlen(notesFil), notesFil);
+  printf("Notes Fil: %ld %s\n", strlen(notesFile), notesFile);
 
   switchGrp(&curGrp, "input");
   getKbdEvents(&set);
@@ -100,10 +114,11 @@ int main() {
 
         default:
           resetKeyStatus(ks, ev.code);
+          served = false;
           break;
         }
 
-        if (ks->Ctrl && ks->Alt && ks->M) {
+        if (ks->Ctrl && ks->Alt && ks->M && !served) {
           printf("CTRL + ALT + M detected!\n");
           printf("Launching tofi\n");
           printf("tofi.cfg path: %s\n", tofiCfg);
@@ -114,7 +129,7 @@ int main() {
           snprintf(cmd, BUFSIZE * 2,
                    "%s  --prompt-text=\"  select:  \" "
                    "--placeholder-text=\"%s\" --require-match=false",
-                   basecmd, notesFilNam);
+                   basecmd, notesFilName);
 
           printf("Executing: %s\n", cmd);
           FILE *fp = popen(cmd, "r");
@@ -124,21 +139,27 @@ int main() {
           }
 
           char buf[BUFSIZE];
-          int selection = 0;
+          bool selection = false;
           while (fgets(buf, BUFSIZE, fp)) {
-            selection = 1;
+            selection = true;
             buf[strcspn(buf, "\n")] = 0;
             printf("Selected: %ld %s\n", strlen(buf), buf);
             fflush(stdout);
           }
           if (selection) {
-            strcpy(notesFilNam, buf);
-            snprintf(notesFil, BUFSIZE * 2, "%s/%s", notesDir, notesFilNam);
+            strcpy(notesFilName, buf);
+            snprintf(notesFile, BUFSIZE * 2, "%s/%s", notesDir, notesFilName);
+            fdPrevFile = open(prevFile, O_TRUNC | O_CREAT | O_WRONLY, 0666);
+            if (fdPrevFile > 0) {
+              write(fdPrevFile, notesFilName, strlen(notesFilName));
+            }
+            close(fdPrevFile);
           }
           pclose(fp);
+          served = true;
         }
 
-        if (ks->Ctrl && ks->Alt && ks->C) {
+        if (ks->Ctrl && ks->Alt && ks->C && !served) {
           printf("CTRL + ALT + C detected!\n");
           printf("Dispatching request to get primary selection\n");
 
@@ -149,10 +170,10 @@ int main() {
           }
 
           char buf[BUFSIZE];
-          int notes = open(notesFil, O_RDWR | O_CREAT | O_APPEND, 0666);
+          int notes = open(notesFile, O_RDWR | O_CREAT | O_APPEND, 0666);
           if (notes < 0) {
             char errStr[BUFSIZE];
-            sprintf(errStr, "Cannot open %s", notesFil);
+            sprintf(errStr, "Cannot open %s", notesFile);
             perror(errStr);
             exit(1);
           }
@@ -163,6 +184,7 @@ int main() {
           }
           pclose(fp);
           close(notes);
+          served = true;
         }
       }
     }
