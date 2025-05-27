@@ -14,13 +14,27 @@ struct hakaStatus {
   char notesDir[BUFSIZE];
   char notesFileName[BUFSIZE];
   char notesFile[BUFSIZE * 2];
+  int fdNotesFile;
 
   int fdPrevFile;
   char prevFile[BUFSIZE];
   char tofiCfg[BUFSIZE];
 
+  FILE* fp;
+
   bool served;
+  int childCount;
 };
+
+#define statusCheck(haka)                                       \
+  if (haka == NULL) {                                           \
+    fprintf(stderr, "The hakaStatus object cannot be NULL.\n"); \
+    exit(1);                                                    \
+  }
+
+#define buildAbsFilePath(haka)                                    \
+  snprintf(haka->notesFile, BUFSIZE * 2, "%s/%s", haka->notesDir, \
+           haka->notesFileName);
 
 struct hakaStatus* initHaka();
 void getExeDir(struct hakaStatus* haka);
@@ -29,8 +43,11 @@ void getPrevFile(struct hakaStatus* haka);
 struct keyStatus {
   bool Ctrl;
   bool Alt;
+
   bool C;
   bool M;
+  bool O;
+  bool P;
 };
 struct keyStatus* initKeyStatus();
 
@@ -50,6 +67,12 @@ struct keyStatus* initKeyStatus();
     case KEY_M:                \
       ks->M = true;            \
       break;                   \
+    case KEY_O:                \
+      ks->O = true;            \
+      break;                   \
+    case KEY_P:                \
+      ks->P = true;            \
+      break;                   \
   }
 
 #define resetKeyStatus(ks, code) \
@@ -68,8 +91,16 @@ struct keyStatus* initKeyStatus();
     case KEY_M:                  \
       ks->M = false;             \
       break;                     \
+    case KEY_O:                  \
+      ks->O = false;             \
+      break;                     \
+    case KEY_P:                  \
+      ks->P = false;             \
+      break;                     \
   }
 
 #define keyCombination(ks, KEY) ks->Ctrl && ks->Alt && ks->KEY
+
+void reapChild(struct hakaStatus* haka);
 
 #endif

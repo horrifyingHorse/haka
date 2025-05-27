@@ -2,12 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <dirent.h>
 #include <fcntl.h>
-#include <grp.h>
-#include <libevdev-1.0/libevdev/libevdev.h>
-#include <linux/input-event-codes.h>
-#include <sys/select.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "haka.h"
@@ -53,8 +49,10 @@ int main() {
         continue;
 
       while (libevdev_next_event(devs[i], LIBEVDEV_READ_FLAG_NORMAL, &ev) ==
-                 0 &&
-             ev.type == EV_KEY) {
+             0) {
+        if (ev.type != EV_KEY)
+          continue;
+
         // printf("Key: %s\n", libevdev_event_code_get_name(ev.type, ev.code));
         // fflush(stdout);
 
@@ -79,6 +77,18 @@ int main() {
         if (keyCombination(ks, C) && !haka->served) {
           writeToFile(haka);
         }
+
+        if (keyCombination(ks, P) && !haka->served) {
+          writePointToFile(haka);
+        }
+
+        if (keyCombination(ks, O) && !haka->served) {
+          openFile(haka);
+        }
+
+        if (haka->childCount > 0) {
+          reapChild(haka);
+        }
       }
     }
   }
@@ -102,6 +112,8 @@ struct keyStatus *initKeyStatus() {
   ks->Alt = false;
   ks->C = false;
   ks->M = false;
+  ks->O = false;
+  ks->P = false;
 
   return ks;
 }
@@ -122,9 +134,11 @@ struct hakaStatus *initHaka() {
   getExeDir(haka);
   getPrevFile(haka);
   strCpyCat(haka->notesDir, haka->execDir, "/notes");
-  snprintf(haka->notesFile, BUFSIZE * 2, "%s/%s", haka->notesDir,
-           haka->notesFileName);
+  buildAbsFilePath(haka);
+  haka->fdNotesFile = -1;
   strCpyCat(haka->tofiCfg, haka->execDir, "/tofi.cfg");
+  haka->fp = NULL;
+  haka->childCount = 0;
 
   printf("Notes File: %ld %s\n", strlen(haka->notesFile), haka->notesFile);
 
@@ -153,6 +167,8 @@ struct hakaStatus *initHaka() {
 }
 
 void getExeDir(struct hakaStatus *haka) {
+  statusCheck(haka);
+
   ssize_t nbytes = readlink("/proc/self/exe", haka->execDir, BUFSIZE);
   if (nbytes < 0) {
     perror("Cannot readlink /proc/self/exe");
@@ -178,6 +194,8 @@ void getExeDir(struct hakaStatus *haka) {
 }
 
 void getPrevFile(struct hakaStatus *haka) {
+  statusCheck(haka);
+
   strcpy(haka->notesFileName, "notes.txt\0");
   size_t bytes = strlen(haka->notesFileName);
   sprintf(haka->prevFile, "%s/prevFile.txt", haka->execDir);
@@ -192,4 +210,12 @@ void getPrevFile(struct hakaStatus *haka) {
   }
 
   close(haka->fdPrevFile);
+}
+
+void reapChild(struct hakaStatus *haka) {
+  pid_t pid;
+  while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+    printf("Reaped child proc %d\n", pid);
+    haka->childCount--;
+  }
 }

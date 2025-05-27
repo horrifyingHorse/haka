@@ -1,11 +1,14 @@
 #include <dirent.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <libevdev-1.0/libevdev/libevdev.h>
 
+#include "hakaBase.h"
 #include "hakaUtils.h"
 
 struct IntSet *initIntSet(int capacity) {
@@ -196,4 +199,24 @@ int openKbdDevices(struct IntSet *set, int *fds, struct libevdev **devs) {
     devs[i] = dev;
   }
   return 0;
+}
+
+char *getEnvVar(const char *var) {
+  char cmd[BUFSIZE];
+  strCpyCat(cmd, "echo ", var);
+
+  FILE *fp = popen(cmd, "r");
+  if (fp == NULL) {
+    fprintf(stderr, "Unable to get Env Var %s\n", var);
+    return NULL;
+  }
+
+  char *res = (char *)malloc(sizeof(char) * BUFSIZE);
+  if (fgets(res, BUFSIZE, fp)) {
+    res[strcspn(res, "\n")] = '\0';
+  }
+
+  pclose(fp);
+
+  return res;
 }

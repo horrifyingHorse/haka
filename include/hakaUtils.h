@@ -2,6 +2,7 @@
 #define HAKA_UTILS_H
 
 #include <grp.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <libevdev-1.0/libevdev/libevdev.h>
@@ -19,6 +20,7 @@ int dynamicInc(struct IntSet* set);
 
 int checkPackage(const char* pkgName);
 void forceSudo();
+char* getEnvVar(const char* var);
 
 void switchGrp(gid_t* curGID, const char* grpnam);
 
