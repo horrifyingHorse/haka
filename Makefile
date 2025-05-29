@@ -14,5 +14,6 @@ $(OUT): $(SRC)
 
 clean:
 	rm -f $(OUT)
+	rm -rf prevFile.txt
 
 .PHONY: all clean

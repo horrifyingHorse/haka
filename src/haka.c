@@ -107,6 +107,9 @@ int main() {
     libevdev_free(devs[i]);
     close(fds[i]);
   }
+  free(set);
+  free(haka);
+  free(ks);
 
   return 0;
 }
