@@ -11,6 +11,12 @@
 #include "hakaUtils.h"
 
 int main() {
+  // Need to disable full buffering and switch to
+  // line buffering to make sure journal catches
+  // all the logs.
+  setvbuf(stdout, NULL, _IOLBF, 0);
+  setvbuf(stderr, NULL, _IOLBF, 0);
+
   struct IntSet *set = initIntSet(2);
   struct hakaStatus *haka = initHaka();
   struct keyStatus *ks = initKeyStatus();
