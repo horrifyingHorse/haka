@@ -72,6 +72,16 @@ int main() {
 
         if (keyCombination(ks, M) && !haka->served) {
           switchFile(haka);
+
+          // Issue: After Tofi launches, haka waits for it to return
+          // sometimes the KeyUp events are missed by haka resulting
+          // in undefined behaviour.
+          //
+          // Clean up after serving can fix it. Need a better way to
+          // do this
+          ks->M = false;
+          ks->Alt = false;
+          ks->Ctrl = false;
         }
 
         if (keyCombination(ks, C) && !haka->served) {
