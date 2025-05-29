@@ -2,7 +2,7 @@
 #define HAKA_H
 
 #include <grp.h>
-#include <libevdev-1.0/libevdev/libevdev.h>
+#include <libevdev/libevdev.h>
 #include <linux/types.h>
 #include <stdbool.h>
 #include <stdlib.h>

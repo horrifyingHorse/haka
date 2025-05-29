@@ -1,6 +1,18 @@
-haka:
-	gcc ./src/haka.c ./src/hakaUtils.c ./src/hakaEventHandler.c -o haka.out -I./include/ -L/usr/local/lib -levdev
+# === Configurable Variables ===
+CC := gcc
+CFLAGS := -I./include -I./libevdev-1.12.1
+LDLIBS := ./libevdev-1.12.1/libevdev/.libs/libevdev.a
+
+SRC := $(wildcard src/*.c)
+OUT := haka.out
+
+# === Targets ===
+all: $(OUT)
+
+$(OUT): $(SRC)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 clean:
-	rm -rf haka.out
-	rm -rf prevFile.txt
+	rm -f $(OUT)
+
+.PHONY: all clean

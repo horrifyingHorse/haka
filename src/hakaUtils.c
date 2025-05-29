@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <libevdev-1.0/libevdev/libevdev.h>
+#include <libevdev/libevdev.h>
 
 #include "hakaBase.h"
 #include "hakaUtils.h"

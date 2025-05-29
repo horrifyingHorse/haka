@@ -80,6 +80,7 @@ void openFile(struct hakaStatus *haka) {
   }
   if (!strcmp(term, "")) {
     fprintf(stderr, "Cannot get var $TERM, recieved '%s'\n", term);
+    free(term);
     return;
   }
 
@@ -95,6 +96,7 @@ void openFile(struct hakaStatus *haka) {
   }
   haka->childCount++;
 
+  free(term);
   eventHandlerEpilogue(haka);
 }
 
