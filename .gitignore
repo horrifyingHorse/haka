@@ -1,6 +1,7 @@
 *.out
 *.txt
 *.xz
+*.service
 
 notes/
 libevdev-1.12.1/
