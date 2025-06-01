@@ -33,7 +33,7 @@ write
 write [Service]
 write Type=simple
 write ExecStart=$(pwd)/$HAKA
-write WorkingDircetory=$(pwd)
+write WorkingDirectory=$(pwd)
 # Do not need the User field
 # it is only needed when the daemon is running as a root
 # daemon. For a --user daemon, specifying User field
@@ -44,9 +44,10 @@ write StandardOutput=journal
 write StandardError=journal
 write
 write [Install]
-write WantedBy=deault.target
+write WantedBy=default.target
 
 silent systemctl --user status $FILE
+silent systemctl --user stop $FILE
 silent systemctl --user disable $FILE
 ln -s $(pwd)/$FILE ~/.config/systemd/user/
 systemctl --user daemon-reload
