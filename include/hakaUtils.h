@@ -27,4 +27,8 @@ void switchGrp(gid_t* curGID, const char* grpnam);
 int getKbdEvents(struct IntSet* set);
 int openKbdDevices(struct IntSet* set, int* fds, struct libevdev* devs[]);
 
+char* ltrim(char* s);
+char* rtrim(char* s);
+char* trim(char* s);
+
 #endif  // !HAKA_UTILS_H

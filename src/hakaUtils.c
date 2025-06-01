@@ -220,3 +220,23 @@ char *getEnvVar(const char *var) {
 
   return res;
 }
+
+char *ltrim(char *s) {
+  for (; s != NULL && (*s == ' ' || *s == '\t'); s++)
+    ;
+  return s;
+}
+
+char *rtrim(char *s) {
+  char *t = &s[0] + strlen(s) - 1;
+  for (; (t >= s) && (*t == ' ' || *t == '\t'); t--)
+    ;
+  if (t != NULL)
+    *(t + 1) = '\0';
+  return s;
+}
+
+char *trim(char *s) {
+  s = ltrim(s);
+  return rtrim(s);
+}

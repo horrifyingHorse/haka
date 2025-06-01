@@ -15,7 +15,7 @@ void switchFile(struct hakaStatus *haka) {
 
   printf("CTRL + ALT + M detected!\n");
   printf("Launching tofi\n");
-  printf("tofi.cfg path: %s\n", haka->tofiCfg);
+  printf("tofi.cfg path: %s\n", haka->config->tofiCfg);
 
   triggerTofi(haka);
 
@@ -73,30 +73,21 @@ void openFile(struct hakaStatus *haka) {
   printf("CTRL + ALT + O detected!\n");
   printf("Opening current note in editor\n");
 
-  char *term = getEnvVar("$TERM");
-  if (term == NULL) {
-    fprintf(stderr, "Cannot get var $TERM, recieved NULL\n");
-    return;
-  }
-  if (!strcmp(term, "")) {
-    fprintf(stderr, "Cannot get var $TERM, recieved '%s'\n", term);
-    free(term);
-    return;
-  }
-
   pid_t pid = fork();
   if (pid < 0) {
     fprintf(stderr, "unable to create a fork");
     return;
   }
   if (pid == 0) {
-    execlp(term, term, "-e", "nvim", haka->notesFile, NULL);
+    printf("Executing %s %s -e %s %s\n", haka->config->terminal,
+           haka->config->terminal, haka->config->editor, haka->notesFile);
+    execlp(haka->config->terminal, haka->config->terminal, "-e",
+           haka->config->editor, haka->notesFile, NULL);
     perror("execlp failed to launch note");
     exit(1);
   }
   haka->childCount++;
 
-  free(term);
   eventHandlerEpilogue(haka);
 }
 
@@ -143,7 +134,7 @@ FILE *triggerTofi(struct hakaStatus *haka) {
 
   char cmd[BUFSIZE * 2], basecmd[BUFSIZE * 2];
   snprintf(basecmd, BUFSIZE * 2, "ls %s -Ap1 | grep -v / | tofi -c %s",
-           haka->notesDir, haka->tofiCfg);
+           haka->config->notesDir, haka->config->tofiCfg);
   snprintf(cmd, BUFSIZE * 2,
            "%s  --prompt-text=\"  select:  \" "
            "--placeholder-text=\"%s\" --require-match=false",
