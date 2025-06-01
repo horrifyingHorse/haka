@@ -144,6 +144,10 @@ int parseConf(struct confVars *conf, char *line) {
     return -1;
   }
 
+  line = trim(line);
+  if (line[0] == '#')
+    return 0;
+
   char *c = line;
   for (; *c != '\0' && *c != '='; c++)
     ;
@@ -184,7 +188,7 @@ int parseConf(struct confVars *conf, char *line) {
       val[strlen(val) - 1] = '\0';
     }
     if (val[0] == '~' && (val[1] == '/' || val[1] == '\\')) {
-      char *home = getEnvVar("HOME");
+      char *home = getEnvVar("$HOME");
       var = var + 1;
       strcat(home, val);
       val = home;
@@ -192,6 +196,8 @@ int parseConf(struct confVars *conf, char *line) {
     strcpy(conf->notesDir, val);
   } else if (strcmp(var, "tofi-cfg") == 0) {
     strcpy(conf->tofiCfg, val);
+  } else if (strcmp(var, "terminal") == 0) {
+    strcpy(conf->terminal, val);
   }
 
   return 0;
@@ -201,9 +207,20 @@ struct confVars *initConf(struct hakaStatus *haka) {
   haka->config = (struct confVars *)malloc(sizeof(struct confVars));
   struct confVars *conf = haka->config;
 
-  strcpy(conf->editor, "nvim");
+  strcpy(conf->editor, "/usr/bin/nvim");
   strCpyCat(conf->notesDir, haka->execDir, "/notes");
   strCpyCat(conf->tofiCfg, haka->execDir, "/tofi.cfg");
+
+  char *term = getEnvVar("$TERM");
+  if (term == NULL) {
+    fprintf(stderr, "Cannot get var $TERM, recieved NULL\n");
+  }
+  if (strcmp(term, "") == 0) {
+    fprintf(stderr, "Cannot get var $TERM, recieved '%s'\n", term);
+    strcpy(conf->terminal, "alacritty");
+  } else {
+    strcpy(conf->terminal, term);
+  }
 
   char configFile[BUFSIZE];
   strCpyCat(configFile, haka->execDir, "/haka.cfg");
@@ -219,6 +236,7 @@ struct confVars *initConf(struct hakaStatus *haka) {
     parseConf(conf, line);
   }
 
+  free(term);
   fclose(file);
   return conf;
 }

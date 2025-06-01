@@ -73,32 +73,21 @@ void openFile(struct hakaStatus *haka) {
   printf("CTRL + ALT + O detected!\n");
   printf("Opening current note in editor\n");
 
-  char *term = getEnvVar("$TERM");
-  if (term == NULL) {
-    fprintf(stderr, "Cannot get var $TERM, recieved NULL\n");
-    return;
-  }
-  if (!strcmp(term, "")) {
-    fprintf(stderr, "Cannot get var $TERM, recieved '%s'\n", term);
-    free(term);
-    return;
-  }
-
   pid_t pid = fork();
   if (pid < 0) {
     fprintf(stderr, "unable to create a fork");
     return;
   }
   if (pid == 0) {
-    printf("Executing %s %s -e %s %s\n", term, term, haka->config->editor,
-           haka->notesFile);
-    execlp(term, term, "-e", haka->config->editor, haka->notesFile, NULL);
+    printf("Executing %s %s -e %s %s\n", haka->config->terminal,
+           haka->config->terminal, haka->config->editor, haka->notesFile);
+    execlp(haka->config->terminal, haka->config->terminal, "-e",
+           haka->config->editor, haka->notesFile, NULL);
     perror("execlp failed to launch note");
     exit(1);
   }
   haka->childCount++;
 
-  free(term);
   eventHandlerEpilogue(haka);
 }
 

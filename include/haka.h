@@ -12,6 +12,7 @@
 struct confVars {
   char editor[BUFSIZE];
   char notesDir[BUFSIZE];
+  char terminal[BUFSIZE];
   char tofiCfg[BUFSIZE];
 };
 
