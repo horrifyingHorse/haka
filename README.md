@@ -1,5 +1,5 @@
 # `Haka`
-Simply select text, press the key combination, and add it to your file, without cluttering your clipboard buffer with one-time-use text. All using ***`Haka`***, a low level global keyboard event listener for linux (designed for wayland compositors).
+Simply select text, press the key combination, and add it to your file, without cluttering your clipboard buffer with one-time-use text. All using ***`Haka`***, a low level global keyboard event listener for Wayland.
 
 ## build
 Dependencies
@@ -49,6 +49,7 @@ journalctl --user -u haka.service -f
 
 ## Guide
 - The files displayed in the selection menu is the `notes/` directory and can be found in the directory containing *haka* executable
+- The file is opened by default in *[`neovim`](https://github.com/neovim/neovim)*
 
 ### Default KeyBinds
 | Key Combination | Binded Task |
@@ -56,6 +57,9 @@ journalctl --user -u haka.service -f
 | *`Ctrl+Alt + C`* | Paste the current selection to the current file |
 | *`Ctrl+Alt + P`* | Paste the current selection as an unordered list item to the current file |
 | *`Ctrl+Alt + M`* | Opens the file selection menu |
+| *`Ctrl+Alt + O`* | Opens the file in neovim |
 
 ## TODO
 - [ ] Switch to gtk(?): to reduce dependencies.
+- [ ] Add a config file option for vars.
+- [ ] Ignore newlines in selection(?)
