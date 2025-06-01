@@ -47,6 +47,21 @@ Check logs:
 journalctl --user -u haka.service -f
 ```
 
+## Config
+Config file for haka must be named *[`haka.cfg`](https://github.com/horrifyingHorse/haka/blob/main/haka.cfg)* which must be present in the same directory as the *haka executable*. The haka config parser allows you to use **command substitution** for configuration values. *For example, you can specify the editor dynamically using*:
+
+```env
+editor=$(which emacs)
+```
+
+### Config Options
+| Option | Value | Description |
+|--------|-------|-------------|
+| editor | /path/to/editor/bin | Specify the editor to open files in | 
+| terminal | /path/to/terminal/bin | Specify the terminal to open editor in | 
+| notes-dir | /path/to/notes/dir | Custom path to notes dir | 
+| tofi-cfg | /path/to/tofi/cfg | Custom path for tofi.cfg file | 
+
 ## Guide
 - The files displayed in the selection menu is the `notes/` directory and can be found in the directory containing *haka* executable
 - The file is opened by default in *[`neovim`](https://github.com/neovim/neovim)*
@@ -61,5 +76,5 @@ journalctl --user -u haka.service -f
 
 ## TODO
 - [ ] Switch to gtk(?): to reduce dependencies.
-- [ ] Add a config file option for vars.
+- [x] Add a config file option for vars.
 - [ ] Ignore newlines in selection(?)
