@@ -9,18 +9,23 @@
 
 #include "hakaBase.h"
 
+struct confVars {
+  char editor[BUFSIZE];
+  char notesDir[BUFSIZE];
+  char tofiCfg[BUFSIZE];
+};
+
 struct hakaStatus {
   char execDir[BUFSIZE];
-  char notesDir[BUFSIZE];
   char notesFileName[BUFSIZE];
   char notesFile[BUFSIZE * 2];
   int fdNotesFile;
 
   int fdPrevFile;
   char prevFile[BUFSIZE];
-  char tofiCfg[BUFSIZE];
 
   FILE* fp;
+  struct confVars* config;
 
   bool served;
   int childCount;
@@ -32,11 +37,12 @@ struct hakaStatus {
     exit(1);                                                    \
   }
 
-#define buildAbsFilePath(haka)                                    \
-  snprintf(haka->notesFile, BUFSIZE * 2, "%s/%s", haka->notesDir, \
+#define buildAbsFilePath(haka)                                            \
+  snprintf(haka->notesFile, BUFSIZE * 2, "%s/%s", haka->config->notesDir, \
            haka->notesFileName);
 
 struct hakaStatus* initHaka();
+struct confVars* initConf(struct hakaStatus* haka);
 void getExeDir(struct hakaStatus* haka);
 void getPrevFile(struct hakaStatus* haka);
 

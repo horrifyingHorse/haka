@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "haka.h"
+#include "hakaBase.h"
 #include "hakaEventHandler.h"
 #include "hakaUtils.h"
 
@@ -114,6 +115,7 @@ int main() {
     close(fds[i]);
   }
   free(set);
+  free(haka->config);
   free(haka);
   free(ks);
 
@@ -137,6 +139,90 @@ struct keyStatus *initKeyStatus() {
   return ks;
 }
 
+int parseConf(struct confVars *conf, char *line) {
+  if (line == NULL || conf == NULL) {
+    return -1;
+  }
+
+  char *c = line;
+  for (; *c != '\0' && *c != '='; c++)
+    ;
+  if (*c != '=') {
+    return 1;
+  }
+
+  *c = '\0';
+  char *var = line;
+  char *val = ++c;
+  var = trim(var);
+  val = trim(val);
+
+  if (strlen(val) >= 3 && val[0] == '$' && val[1] == '(' &&
+      val[strlen(val) - 1] == ')') {
+    val = val + 2;
+    val[strlen(val) - 1] = '\0';
+    FILE *sh = popen(val, "r");
+    if (sh == NULL) {
+      perror("Unable to popen: ");
+      exit(1);
+    }
+
+    strcpy(val, "");
+    char res[BUFSIZE];
+    while (fgets(res, BUFSIZE, sh)) {
+      res[strcspn(res, "\n")] = '\0';
+      strcat(val, res);
+    }
+
+    fclose(sh);
+  }
+
+  if (strcmp(var, "editor") == 0) {
+    strcpy(conf->editor, val);
+  } else if (strcmp(var, "notes-dir") == 0) {
+    if (val[strlen(val) - 1] == '\\' || val[strlen(val) - 1] == '/') {
+      val[strlen(val) - 1] = '\0';
+    }
+    if (val[0] == '~' && (val[1] == '/' || val[1] == '\\')) {
+      char *home = getEnvVar("HOME");
+      var = var + 1;
+      strcat(home, val);
+      val = home;
+    }
+    strcpy(conf->notesDir, val);
+  } else if (strcmp(var, "tofi-cfg") == 0) {
+    strcpy(conf->tofiCfg, val);
+  }
+
+  return 0;
+}
+
+struct confVars *initConf(struct hakaStatus *haka) {
+  haka->config = (struct confVars *)malloc(sizeof(struct confVars));
+  struct confVars *conf = haka->config;
+
+  strcpy(conf->editor, "nvim");
+  strCpyCat(conf->notesDir, haka->execDir, "/notes");
+  strCpyCat(conf->tofiCfg, haka->execDir, "/tofi.cfg");
+
+  char configFile[BUFSIZE];
+  strCpyCat(configFile, haka->execDir, "/haka.cfg");
+  FILE *file = fopen(configFile, "r");
+  if (file == NULL) {
+    printf("No config file haka.cfg found in execDir: %s\n", haka->execDir);
+    return conf;
+  }
+
+  char line[BUFSIZE];
+  while (fgets(line, BUFSIZE, file)) {
+    line[strcspn(line, "\n")] = '\0';
+    parseConf(conf, line);
+  }
+
+  fclose(file);
+  return conf;
+}
+
 struct hakaStatus *initHaka() {
   if (checkPackage("wl-copy") || checkPackage("wl-paste")) {
     printf("please install wl-clipboard: sudo pacman -S wl-clipboard\n");
@@ -152,10 +238,9 @@ struct hakaStatus *initHaka() {
 
   getExeDir(haka);
   getPrevFile(haka);
-  strCpyCat(haka->notesDir, haka->execDir, "/notes");
+  haka->config = initConf(haka);
   buildAbsFilePath(haka);
   haka->fdNotesFile = -1;
-  strCpyCat(haka->tofiCfg, haka->execDir, "/tofi.cfg");
   haka->fp = NULL;
   haka->childCount = 0;
 
