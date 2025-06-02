@@ -121,11 +121,12 @@ size_t writeFP2FD(struct hakaStatus *haka) {
   size_t bytes = 0;
   char buf[BUFSIZE];
   while (fgets(buf, BUFSIZE, haka->fp)) {
-    buf[strcspn(buf, "\n") + 1] = 0;
+    buf[strcspn(buf, "\n")] = 0;
     bytes += strlen(buf);
     printf("%ld %s", strlen(buf), buf);
     write(haka->fdNotesFile, buf, strlen(buf));
   }
+  write(haka->fdNotesFile, "\n", 1);
   return bytes;
 }
 
