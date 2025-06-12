@@ -29,11 +29,13 @@ void executeKeyBind(struct keyBindings* kbinds,
 void loadBindings(struct keyBindings* kbinds, struct keyStatus* ks);
 #define Bind(func, ...) addKeyBind(kbinds, func, __VA_ARGS__, 0)
 
+// Event Handler Declarations
 void switchFile(struct hakaStatus* haka);
 void writeToFile(struct hakaStatus* haka);
 void writePointToFile(struct hakaStatus* haka);
 void openFile(struct hakaStatus* haka);
 
+// Event Handler Helper Functions
 FILE* getPrimarySelection(struct hakaStatus* haka);
 int openNotesFile(struct hakaStatus* haka);
 size_t writeFP2FD(struct hakaStatus* haka);

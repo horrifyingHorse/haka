@@ -65,8 +65,14 @@ editor=$(which emacs)
 ## Guide
 - The files displayed in the selection menu is the `notes/` directory and can be found in the directory containing *haka* executable
 - The file is opened by default in *[`neovim`](https://github.com/neovim/neovim)*
+- *`haka`* currently supports the first 249 `KEY_NAME` defined in *[`linux/input-event-codes.h`](https://raw.githubusercontent.com/whot/libevdev/refs/heads/master/include/linux/input-event-codes.h)*
 
-### Default KeyBinds
+### KeyBinds
+- The defualt *`ActivationCombo`* is *`Ctr+Alt`*
+- The default keybinds and activation combo are set in the *[`src/bindings.c`](https://github.com/horrifyingHorse/haka/blob/main/src/bindings.c)*.
+- To make custom keybinds, create a function with this prototype: `void func(struct hakaStatus *haka)`. Add its declaration in *`include/hakaEventHandler.h`* and implement it in *`src/hakaEventHandler.c`*.
+Now bind your action to a key in *`src/bindings.c`* using the `Bind(function, KEY_TOBIND...)` macro. Refer *[`linux/input-event-codes.h`](https://raw.githubusercontent.com/whot/libevdev/refs/heads/master/include/linux/input-event-codes.h)* for `KEY_NAME` macros.
+
 | Key Combination | Binded Task |
 |-----------------|-------------|
 | *`Ctrl+Alt + C`* | Paste the current selection to the current file |
@@ -77,4 +83,5 @@ editor=$(which emacs)
 ## TODO
 - [ ] Switch to gtk(?): to reduce dependencies.
 - [x] Add a config file option for vars.
-- [ ] Ignore newlines in selection(?)
+- [x] Ignore newlines in selection(?)
+- [x] Improve bindings implementation
