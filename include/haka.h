@@ -4,6 +4,7 @@
 #include <grp.h>
 #include <libevdev/libevdev.h>
 #include <linux/types.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -11,6 +12,11 @@
 
 #include "hakaBase.h"
 #include "hakaUtils.h"
+
+static volatile sig_atomic_t live = true;
+static void handler(int signum) {
+  live = false;
+}
 
 struct confVars {
   char editor[BUFSIZE];

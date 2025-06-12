@@ -26,6 +26,7 @@ void pushKeyBind(struct keyBindings* kbinds, struct keyBinding* kbind);
 void executeKeyBind(struct keyBindings* kbinds,
                     struct keyStatus* ks,
                     struct hakaStatus* haka);
+void loadBindings(struct keyBindings* kbinds, struct keyStatus* ks);
 #define Bind(func, ...) addKeyBind(kbinds, func, __VA_ARGS__, 0)
 
 void switchFile(struct hakaStatus* haka);

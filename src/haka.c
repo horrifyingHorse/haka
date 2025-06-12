@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <linux/input-event-codes.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,21 +22,23 @@ int main() {
   setvbuf(stdout, NULL, _IOLBF, 0);
   setvbuf(stderr, NULL, _IOLBF, 0);
 
+  // Signals: SIGINT and SIGTERM
+  struct sigaction sa;
+  sa.sa_handler = handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART;
+  sigaction(SIGINT, &sa, 0);
+  sigaction(SIGTERM, &sa, 0);
+
   // clang-format off
   struct IntSet      *set    = initIntSet(2);
   struct hakaStatus  *haka   = initHaka();
   struct keyStatus   *ks     = initKeyStatus(SUPPORTED_KEYS);
   struct keyBindings *kbinds = initKeyBindings(2);
-
-  // Activation Combo
-  ActivationCombo(KEY_LEFTCTRL, KEY_LEFTALT);
-
-  // Key Binds
-  Bind(writeToFile,      KEY_C);
-  Bind(writePointToFile, KEY_P);
-  Bind(openFile,         KEY_O);
-  Bind(switchFile,       KEY_M);
   // clang-format on
+
+  // Load Key Binds (./bindings.c)
+  loadBindings(kbinds, ks);
 
   gid_t curGrp;
   switchGrp(&curGrp, "input");
@@ -46,7 +50,7 @@ int main() {
 
   switchGrp(&curGrp, NULL);
 
-  while (1) {
+  while (live) {
     fd_set fdSet;
     struct input_event ev;
 
@@ -61,8 +65,12 @@ int main() {
 
     int ready = select(maxFd + 1, &fdSet, NULL, NULL, NULL);
     if (ready < 0) {
-      perror("select");
-      exit(1);
+      if (errno == EINTR) {
+        continue;
+      } else {
+        perror("select");
+        break;
+      }
     }
 
     for (int i = 0; i < set->size; i++) {
@@ -87,6 +95,7 @@ int main() {
     }
   }
 
+  Println("Clean up initiated");
   for (int i = 0; i < set->size; i++) {
     libevdev_free(devs[i]);
     close(fds[i]);
@@ -102,6 +111,7 @@ int main() {
   free(kbinds->kbind->keys);
   free(kbinds->kbind);
   free(kbinds);
+  Println("Clean up complete");
 
   return 0;
 }
