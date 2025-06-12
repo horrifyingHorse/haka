@@ -1,4 +1,6 @@
 #include <fcntl.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +11,119 @@
 #include "hakaBase.h"
 #include "hakaEventHandler.h"
 #include "hakaUtils.h"
+
+struct keyBindings *initKeyBindings(int size) {
+  if (size < 0) {
+    Fprintln(stderr, "keybinds size < 0?");
+    exit(EXIT_FAILURE);
+  }
+
+  struct keyBindings *kbinds =
+      (struct keyBindings *)malloc(sizeof(struct keyBindings));
+  if (kbinds == 0) {
+    Fprintln(stderr, "malloc failed for key bindings");
+    exit(EXIT_FAILURE);
+  }
+
+  kbinds->size = 0;
+  kbinds->capacity = size;
+  kbinds->kbind = (struct keyBinding *)malloc(sizeof(struct keyBinding) * size);
+  if (kbinds->kbind == 0) {
+    Fprintln(stderr, "malloc failed for key binding");
+    exit(EXIT_FAILURE);
+  }
+
+  return kbinds;
+}
+
+void addKeyBind(struct keyBindings *kbinds, void (*func)(struct hakaStatus *),
+                int keyToBind, ...) {
+  if (kbinds == 0) {
+    Fprintln(stderr, "keybinds are null; abort adding a keybind");
+    return;
+  }
+
+  struct IntSet *keys = initIntSet(5);
+  pushIntSet(keys, keyToBind);
+
+  va_list args;
+  va_start(args, keyToBind);
+  int key = va_arg(args, int);
+  while (key != 0) {
+    pushIntSet(keys, key);
+    key = va_arg(args, int);
+  }
+  va_end(args);
+
+  struct keyBinding kbind = (struct keyBinding){.keys = keys, .func = func};
+  pushKeyBind(kbinds, &kbind);
+}
+
+void pushKeyBind(struct keyBindings *kbinds, struct keyBinding *kbind) {
+  if (kbinds == 0) {
+    Fprintln(stderr, "keybinds are null; abort pushing a keybind");
+    return;
+  }
+  if (kbind == 0) {
+    Fprintln(stderr, "keybind is null; abort pushing to keybinds");
+    return;
+  }
+
+  if (kbinds->size >= kbinds->capacity) {
+    struct keyBinding *newKBindArr = (struct keyBinding *)malloc(
+        sizeof(struct keyBinding) * kbinds->capacity * 2);
+    if (newKBindArr == 0) {
+      Fprintln(stderr, "malloc failed for dynamic array kbinds");
+      exit(EXIT_FAILURE);
+    }
+    memcpy(newKBindArr, kbinds->kbind,
+           sizeof(struct keyBinding) * kbinds->capacity);
+    free(kbinds->kbind);
+    kbinds->kbind = newKBindArr;
+    kbinds->capacity *= 2;
+  }
+
+  kbinds->kbind[kbinds->size++] =
+      (struct keyBinding){.keys = kbind->keys, .func = kbind->func};
+}
+
+void executeKeyBind(struct keyBindings *kbinds, struct keyStatus *ks,
+                    struct hakaStatus *haka) {
+  if (kbinds == 0) {
+    Fprintln(stderr, "keybinds are null; abort executing a keybind");
+    return;
+  }
+  if (ks == 0) {
+    Fprintln(stderr, "keystatus is null; abort executing a keybind");
+    return;
+  }
+
+  haka->served = false;
+  for (int i = 0; i < kbinds->size; i++) {
+    struct keyBinding kbind = kbinds->kbind[i];
+    struct IntSet *keys = kbind.keys;
+    int j;
+    for (j = 0; j < keys->size && ks->keyPress[keys->set[j]]; j++)
+      ;
+    if (j != keys->size)
+      continue;
+
+    kbind.func(haka);
+
+    // Issue: After Tofi launches, haka waits for it to return
+    // sometimes the KeyUp events are missed by haka resulting
+    // in undefined behaviour.
+    //
+    // Clean up after serving can fix it. Need a better way to
+    // do this
+    haka->served = true;
+    for (j = 0; j < keys->size; j++)
+      ks->keyPress[keys->set[j]] = false;
+    for (int i = 0; i < ks->activationCombo->size; i++)
+      ks->keyPress[ks->activationCombo->set[i]] = false;
+    return;
+  }
+}
 
 void switchFile(struct hakaStatus *haka) {
   statusCheck(haka);

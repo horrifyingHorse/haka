@@ -9,6 +9,14 @@
 
 #include "hakaBase.h"
 
+#define Fprintln(buf, ...)   \
+  fprintf(buf, __VA_ARGS__); \
+  fprintf(buf, "\n")
+
+#define Println(...)   \
+  printf(__VA_ARGS__); \
+  printf("\n")
+
 struct IntSet {
   int* set;
   int size;

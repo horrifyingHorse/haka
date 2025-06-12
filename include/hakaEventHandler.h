@@ -5,12 +5,37 @@
 
 #include "haka.h"
 #include "hakaBase.h"
+#include "hakaUtils.h"
 
+struct keyBinding {
+  struct IntSet* keys;
+  void (*func)(struct hakaStatus*);
+};
+
+struct keyBindings {
+  int size;
+  int capacity;
+  struct keyBinding* kbind;
+};
+struct keyBindings* initKeyBindings(int size);
+void addKeyBind(struct keyBindings* kbinds,
+                void (*func)(struct hakaStatus*),
+                int keyToBind,
+                ...);
+void pushKeyBind(struct keyBindings* kbinds, struct keyBinding* kbind);
+void executeKeyBind(struct keyBindings* kbinds,
+                    struct keyStatus* ks,
+                    struct hakaStatus* haka);
+void loadBindings(struct keyBindings* kbinds, struct keyStatus* ks);
+#define Bind(func, ...) addKeyBind(kbinds, func, __VA_ARGS__, 0)
+
+// Event Handler Declarations
 void switchFile(struct hakaStatus* haka);
 void writeToFile(struct hakaStatus* haka);
 void writePointToFile(struct hakaStatus* haka);
 void openFile(struct hakaStatus* haka);
 
+// Event Handler Helper Functions
 FILE* getPrimarySelection(struct hakaStatus* haka);
 int openNotesFile(struct hakaStatus* haka);
 size_t writeFP2FD(struct hakaStatus* haka);
