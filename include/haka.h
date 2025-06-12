@@ -4,10 +4,13 @@
 #include <grp.h>
 #include <libevdev/libevdev.h>
 #include <linux/types.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "hakaBase.h"
+#include "hakaUtils.h"
 
 struct confVars {
   char editor[BUFSIZE];
@@ -47,66 +50,19 @@ struct confVars* initConf(struct hakaStatus* haka);
 void getExeDir(struct hakaStatus* haka);
 void getPrevFile(struct hakaStatus* haka);
 
+#define SUPPORTED_KEYS 249
 struct keyStatus {
-  bool Ctrl;
-  bool Alt;
-
-  bool C;
-  bool M;
-  bool O;
-  bool P;
+  int16_t size;
+  struct IntSet* activationCombo;
+  bool* keyPress;
 };
-struct keyStatus* initKeyStatus();
+struct keyStatus* initKeyStatus(int16_t size);
+void handleKeyEvent(struct keyStatus* ks, int evCode, int evVal);
+void setActivationCombo(struct keyStatus* ks, ...);
+bool resetActivationCombo(struct keyStatus* ks);
+bool activated(struct keyStatus* ks);
 
-#define setKeyStatus(ks, code) \
-  switch (code) {              \
-    case KEY_LEFTCTRL:         \
-    case KEY_RIGHTCTRL:        \
-      ks->Ctrl = true;         \
-      break;                   \
-    case KEY_LEFTALT:          \
-    case KEY_RIGHTALT:         \
-      ks->Alt = true;          \
-      break;                   \
-    case KEY_C:                \
-      ks->C = true;            \
-      break;                   \
-    case KEY_M:                \
-      ks->M = true;            \
-      break;                   \
-    case KEY_O:                \
-      ks->O = true;            \
-      break;                   \
-    case KEY_P:                \
-      ks->P = true;            \
-      break;                   \
-  }
-
-#define resetKeyStatus(ks, code) \
-  switch (code) {                \
-    case KEY_LEFTCTRL:           \
-    case KEY_RIGHTCTRL:          \
-      ks->Ctrl = false;          \
-      break;                     \
-    case KEY_LEFTALT:            \
-    case KEY_RIGHTALT:           \
-      ks->Alt = false;           \
-      break;                     \
-    case KEY_C:                  \
-      ks->C = false;             \
-      break;                     \
-    case KEY_M:                  \
-      ks->M = false;             \
-      break;                     \
-    case KEY_O:                  \
-      ks->O = false;             \
-      break;                     \
-    case KEY_P:                  \
-      ks->P = false;             \
-      break;                     \
-  }
-
-#define keyCombination(ks, KEY) ks->Ctrl && ks->Alt && ks->KEY
+#define ActivationCombo(...) setActivationCombo(ks, __VA_ARGS__, -1)
 
 void reapChild(struct hakaStatus* haka);
 
