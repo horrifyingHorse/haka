@@ -9,7 +9,7 @@
 
 struct keyBinding {
   struct IntSet* keys;
-  void (*func)(struct hakaStatus*);
+  void (*func)(struct hakaContext*);
 };
 
 struct keyBindings {
@@ -17,29 +17,31 @@ struct keyBindings {
   int capacity;
   struct keyBinding* kbind;
 };
+
 struct keyBindings* initKeyBindings(int size);
 void addKeyBind(struct keyBindings* kbinds,
-                void (*func)(struct hakaStatus*),
+                void (*func)(struct hakaContext*),
                 int keyToBind,
                 ...);
 void pushKeyBind(struct keyBindings* kbinds, struct keyBinding* kbind);
 void executeKeyBind(struct keyBindings* kbinds,
-                    struct keyStatus* ks,
-                    struct hakaStatus* haka);
-void loadBindings(struct keyBindings* kbinds, struct keyStatus* ks);
-#define Bind(func, ...) addKeyBind(kbinds, func, __VA_ARGS__, 0)
+                    struct keyState* ks,
+                    struct hakaContext* haka);
+void loadBindings(struct keyBindings* kbinds, struct keyState* ks);
 
 // Event Handler Declarations
-void switchFile(struct hakaStatus* haka);
-void writeToFile(struct hakaStatus* haka);
-void writePointToFile(struct hakaStatus* haka);
-void openFile(struct hakaStatus* haka);
+void switchFile(struct hakaContext* haka);
+void writeToFile(struct hakaContext* haka);
+void writePointToFile(struct hakaContext* haka);
+void openFile(struct hakaContext* haka);
 
 // Event Handler Helper Functions
-FILE* getPrimarySelection(struct hakaStatus* haka);
-int openNotesFile(struct hakaStatus* haka);
-size_t writeFP2FD(struct hakaStatus* haka);
-FILE* triggerTofi(struct hakaStatus* haka);
+FILE* getPrimarySelection(struct hakaContext* haka);
+int openNotesFile(struct hakaContext* haka);
+size_t writeFP2FD(struct hakaContext* haka);
+FILE* triggerTofi(struct hakaContext* haka);
+
+#define Bind(func, ...) addKeyBind(kbinds, func, __VA_ARGS__, 0)
 
 #define updatePrevFile(haka)                                                   \
   haka->fdPrevFile = open(haka->prevFile, O_TRUNC | O_CREAT | O_WRONLY, 0666); \

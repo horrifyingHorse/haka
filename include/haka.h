@@ -25,7 +25,7 @@ struct confVars {
   char tofiCfg[BUFSIZE];
 };
 
-struct hakaStatus {
+struct hakaContext {
   char execDir[BUFSIZE];
   char notesFileName[BUFSIZE];
   char notesFile[BUFSIZE * 2];
@@ -41,35 +41,36 @@ struct hakaStatus {
   int childCount;
 };
 
-#define statusCheck(haka)                                       \
-  if (haka == NULL) {                                           \
-    fprintf(stderr, "The hakaStatus object cannot be NULL.\n"); \
-    exit(1);                                                    \
+struct keyState {
+  int16_t size;
+  struct IntSet* activationCombo;
+  bool* keyPress;
+};
+
+struct hakaContext* initHaka();
+struct confVars* initConf(struct hakaContext* haka);
+void getExeDir(struct hakaContext* haka);
+void getPrevFile(struct hakaContext* haka);
+
+struct keyState* initKeyState(int16_t size);
+void handleKeyEvent(struct keyState* ks, int evCode, int evVal);
+void setActivationCombo(struct keyState* ks, ...);
+bool resetActivationCombo(struct keyState* ks);
+bool activated(struct keyState* ks);
+
+void reapChild(struct hakaContext* haka);
+
+#define SUPPORTED_KEYS 249
+#define ActivationCombo(...) setActivationCombo(ks, __VA_ARGS__, -1)
+
+#define contextCheck(haka)                                       \
+  if (haka == NULL) {                                            \
+    fprintf(stderr, "The hakaContext object cannot be NULL.\n"); \
+    exit(1);                                                     \
   }
 
 #define buildAbsFilePath(haka)                                            \
   snprintf(haka->notesFile, BUFSIZE * 2, "%s/%s", haka->config->notesDir, \
            haka->notesFileName);
-
-struct hakaStatus* initHaka();
-struct confVars* initConf(struct hakaStatus* haka);
-void getExeDir(struct hakaStatus* haka);
-void getPrevFile(struct hakaStatus* haka);
-
-#define SUPPORTED_KEYS 249
-struct keyStatus {
-  int16_t size;
-  struct IntSet* activationCombo;
-  bool* keyPress;
-};
-struct keyStatus* initKeyStatus(int16_t size);
-void handleKeyEvent(struct keyStatus* ks, int evCode, int evVal);
-void setActivationCombo(struct keyStatus* ks, ...);
-bool resetActivationCombo(struct keyStatus* ks);
-bool activated(struct keyStatus* ks);
-
-#define ActivationCombo(...) setActivationCombo(ks, __VA_ARGS__, -1)
-
-void reapChild(struct hakaStatus* haka);
 
 #endif

@@ -36,7 +36,7 @@ struct keyBindings *initKeyBindings(int size) {
   return kbinds;
 }
 
-void addKeyBind(struct keyBindings *kbinds, void (*func)(struct hakaStatus *),
+void addKeyBind(struct keyBindings *kbinds, void (*func)(struct hakaContext *),
                 int keyToBind, ...) {
   if (kbinds == 0) {
     Fprintln(stderr, "keybinds are null; abort adding a keybind");
@@ -87,8 +87,8 @@ void pushKeyBind(struct keyBindings *kbinds, struct keyBinding *kbind) {
       (struct keyBinding){.keys = kbind->keys, .func = kbind->func};
 }
 
-void executeKeyBind(struct keyBindings *kbinds, struct keyStatus *ks,
-                    struct hakaStatus *haka) {
+void executeKeyBind(struct keyBindings *kbinds, struct keyState *ks,
+                    struct hakaContext *haka) {
   if (kbinds == 0) {
     Fprintln(stderr, "keybinds are null; abort executing a keybind");
     return;
@@ -125,8 +125,8 @@ void executeKeyBind(struct keyBindings *kbinds, struct keyStatus *ks,
   }
 }
 
-void switchFile(struct hakaStatus *haka) {
-  statusCheck(haka);
+void switchFile(struct hakaContext *haka) {
+  contextCheck(haka);
 
   printf("CTRL + ALT + M detected!\n");
   printf("Launching tofi\n");
@@ -152,8 +152,8 @@ void switchFile(struct hakaStatus *haka) {
   eventHandlerEpilogue(haka);
 }
 
-void writeToFile(struct hakaStatus *haka) {
-  statusCheck(haka);
+void writeToFile(struct hakaContext *haka) {
+  contextCheck(haka);
 
   printf("CTRL + ALT + C detected!\n");
   printf("Dispatching request to get primary selection\n");
@@ -166,8 +166,8 @@ void writeToFile(struct hakaStatus *haka) {
   eventHandlerEpilogue(haka);
 }
 
-void writePointToFile(struct hakaStatus *haka) {
-  statusCheck(haka);
+void writePointToFile(struct hakaContext *haka) {
+  contextCheck(haka);
 
   printf("CTRL + ALT + P detected!\n");
   printf("Dispatching request to get primary selection\n");
@@ -182,8 +182,8 @@ void writePointToFile(struct hakaStatus *haka) {
   eventHandlerEpilogue(haka);
 }
 
-void openFile(struct hakaStatus *haka) {
-  statusCheck(haka);
+void openFile(struct hakaContext *haka) {
+  contextCheck(haka);
 
   printf("CTRL + ALT + O detected!\n");
   printf("Opening current note in editor\n");
@@ -206,8 +206,8 @@ void openFile(struct hakaStatus *haka) {
   eventHandlerEpilogue(haka);
 }
 
-FILE *getPrimarySelection(struct hakaStatus *haka) {
-  statusCheck(haka);
+FILE *getPrimarySelection(struct hakaContext *haka) {
+  contextCheck(haka);
 
   haka->fp = popen("wl-paste -p", "r");
   if (haka->fp == NULL) {
@@ -217,8 +217,8 @@ FILE *getPrimarySelection(struct hakaStatus *haka) {
   return haka->fp;
 }
 
-int openNotesFile(struct hakaStatus *haka) {
-  statusCheck(haka);
+int openNotesFile(struct hakaContext *haka) {
+  contextCheck(haka);
 
   haka->fdNotesFile = open(haka->notesFile, O_RDWR | O_CREAT | O_APPEND, 0666);
   if (haka->fdNotesFile < 0) {
@@ -230,8 +230,8 @@ int openNotesFile(struct hakaStatus *haka) {
   return haka->fdNotesFile;
 }
 
-size_t writeFP2FD(struct hakaStatus *haka) {
-  statusCheck(haka);
+size_t writeFP2FD(struct hakaContext *haka) {
+  contextCheck(haka);
 
   size_t bytes = 0;
   char buf[BUFSIZE];
@@ -245,8 +245,8 @@ size_t writeFP2FD(struct hakaStatus *haka) {
   return bytes;
 }
 
-FILE *triggerTofi(struct hakaStatus *haka) {
-  statusCheck(haka);
+FILE *triggerTofi(struct hakaContext *haka) {
+  contextCheck(haka);
 
   char cmd[BUFSIZE * 2], basecmd[BUFSIZE * 2];
   snprintf(basecmd, BUFSIZE * 2, "ls %s -Ap1 | grep -v / | tofi -c %s",

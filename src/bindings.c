@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 // clang-format off
-void loadBindings(struct keyBindings *kbinds, struct keyStatus* ks) {
+void loadBindings(struct keyBindings *kbinds, struct keyState* ks) {
   if (kbinds == 0 || ks == 0) {
     Fprintln(stderr, "cannot bind keys to null");
     exit(EXIT_FAILURE);

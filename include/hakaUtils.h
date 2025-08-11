@@ -9,19 +9,12 @@
 
 #include "hakaBase.h"
 
-#define Fprintln(buf, ...)   \
-  fprintf(buf, __VA_ARGS__); \
-  fprintf(buf, "\n")
-
-#define Println(...)   \
-  printf(__VA_ARGS__); \
-  printf("\n")
-
 struct IntSet {
   int* set;
   int size;
   int capacity;
 };
+
 struct IntSet* initIntSet(int capacity);
 int pushIntSet(struct IntSet* set, int val);
 int dynamicInc(struct IntSet* set);
@@ -38,5 +31,13 @@ int openKbdDevices(struct IntSet* set, int* fds, struct libevdev* devs[]);
 char* ltrim(char* s);
 char* rtrim(char* s);
 char* trim(char* s);
+
+#define Fprintln(buf, ...)   \
+  fprintf(buf, __VA_ARGS__); \
+  fprintf(buf, "\n")
+
+#define Println(...)   \
+  printf(__VA_ARGS__); \
+  printf("\n")
 
 #endif  // !HAKA_UTILS_H

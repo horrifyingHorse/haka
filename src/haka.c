@@ -32,8 +32,8 @@ int main() {
 
   // clang-format off
   struct IntSet      *set    = initIntSet(2);
-  struct hakaStatus  *haka   = initHaka();
-  struct keyStatus   *ks     = initKeyStatus(SUPPORTED_KEYS);
+  struct hakaContext  *haka   = initHaka();
+  struct keyState    *ks     = initKeyState(SUPPORTED_KEYS);
   struct keyBindings *kbinds = initKeyBindings(2);
   // clang-format on
 
@@ -116,8 +116,8 @@ int main() {
   return 0;
 }
 
-struct keyStatus *initKeyStatus(int16_t size) {
-  struct keyStatus *ks = (struct keyStatus *)malloc(sizeof(struct keyStatus));
+struct keyState *initKeyState(int16_t size) {
+  struct keyState *ks = (struct keyState *)malloc(sizeof(struct keyState));
   if (ks == 0) {
     Fprintln(stderr, "malloc failed for keymap");
     exit(EXIT_FAILURE);
@@ -134,9 +134,9 @@ struct keyStatus *initKeyStatus(int16_t size) {
   return ks;
 }
 
-void handleKeyEvent(struct keyStatus *ks, int evCode, int evVal) {
+void handleKeyEvent(struct keyState *ks, int evCode, int evVal) {
   if (ks == 0) {
-    Fprintln(stderr, "keyStatus pointer cannot be null to handle keys");
+    Fprintln(stderr, "keyState pointer cannot be null to handle keys");
     return;
   }
   if (evCode < 0 || evCode > ks->size) {
@@ -150,7 +150,7 @@ void handleKeyEvent(struct keyStatus *ks, int evCode, int evVal) {
   ks->keyPress[evCode] = evVal;
 }
 
-void setActivationCombo(struct keyStatus *ks, ...) {
+void setActivationCombo(struct keyState *ks, ...) {
   if (!resetActivationCombo(ks)) {
     Fprintln(stderr, "abort set activation combo");
     return;
@@ -168,7 +168,7 @@ void setActivationCombo(struct keyStatus *ks, ...) {
   }
 }
 
-bool resetActivationCombo(struct keyStatus *ks) {
+bool resetActivationCombo(struct keyState *ks) {
   if (ks == 0) {
     Fprintln(stderr,
              "keystatus object cannot be null; activaition key reset ignored");
@@ -183,7 +183,7 @@ bool resetActivationCombo(struct keyStatus *ks) {
   return true;
 }
 
-bool activated(struct keyStatus *ks) {
+bool activated(struct keyState *ks) {
   for (int i = 0; i < ks->activationCombo->size; i++) {
     if (!ks->keyPress[ks->activationCombo->set[i]]) {
       return false;
@@ -256,7 +256,7 @@ int parseConf(struct confVars *conf, char *line) {
   return 0;
 }
 
-struct confVars *initConf(struct hakaStatus *haka) {
+struct confVars *initConf(struct hakaContext *haka) {
   haka->config = (struct confVars *)malloc(sizeof(struct confVars));
   struct confVars *conf = haka->config;
 
@@ -294,7 +294,7 @@ struct confVars *initConf(struct hakaStatus *haka) {
   return conf;
 }
 
-struct hakaStatus *initHaka() {
+struct hakaContext *initHaka() {
   if (checkPackage("wl-copy") || checkPackage("wl-paste")) {
     printf("please install wl-clipboard: sudo pacman -S wl-clipboard\n");
     exit(1);
@@ -304,8 +304,8 @@ struct hakaStatus *initHaka() {
     exit(1);
   }
 
-  struct hakaStatus *haka =
-      (struct hakaStatus *)malloc(sizeof(struct hakaStatus));
+  struct hakaContext *haka =
+      (struct hakaContext *)malloc(sizeof(struct hakaContext));
 
   getExeDir(haka);
   getPrevFile(haka);
@@ -341,8 +341,8 @@ struct hakaStatus *initHaka() {
   return haka;
 }
 
-void getExeDir(struct hakaStatus *haka) {
-  statusCheck(haka);
+void getExeDir(struct hakaContext *haka) {
+  contextCheck(haka);
 
   ssize_t nbytes = readlink("/proc/self/exe", haka->execDir, BUFSIZE);
   if (nbytes < 0) {
@@ -368,8 +368,8 @@ void getExeDir(struct hakaStatus *haka) {
   printf("Dir Path: %s\n", haka->execDir);
 }
 
-void getPrevFile(struct hakaStatus *haka) {
-  statusCheck(haka);
+void getPrevFile(struct hakaContext *haka) {
+  contextCheck(haka);
 
   strcpy(haka->notesFileName, "notes.txt\0");
   size_t bytes = strlen(haka->notesFileName);
@@ -387,7 +387,7 @@ void getPrevFile(struct hakaStatus *haka) {
   close(haka->fdPrevFile);
 }
 
-void reapChild(struct hakaStatus *haka) {
+void reapChild(struct hakaContext *haka) {
   pid_t pid;
   while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
     printf("Reaped child proc %d\n", pid);
