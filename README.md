@@ -1,5 +1,11 @@
 # `Haka`
-Simply select text, press the key combination, and it's added to your file! Without cluttering your clipboard buffer with one-time-use text. All using ***`Haka`***, a low level global keyboard event listener for Wayland.
+Simply select text, press the key combination, and it's added to your file! Without cluttering your clipboard buffer with one-time-use text. 
+
+<p align="center">
+  All using <b><i>Haka</i></b>, a low level global keyboard event listener for Wayland.
+  <br/>
+  <img src="https://github.com/user-attachments/assets/94bfdb3c-b3ee-4772-bb04-be72dfc07517" alt="Haka demo"/>
+</p>
 
 ## build
 Dependencies
