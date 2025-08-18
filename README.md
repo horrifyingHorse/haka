@@ -1,5 +1,5 @@
 # `Haka`
-Simply select text, press the key combination, and it's added to your file! Without cluttering your clipboard buffer with one-time-use text. 
+Simply select text, press the key combination, and it's added to your file! Without cluttering your clipboard buffer with one-time-use text.
 
 <p align="center">
   All using <b><i>Haka</i></b>, a low level global keyboard event listener for Wayland.
@@ -7,13 +7,48 @@ Simply select text, press the key combination, and it's added to your file! With
   <img src="https://github.com/user-attachments/assets/94bfdb3c-b3ee-4772-bb04-be72dfc07517" alt="Haka demo"/>
 </p>
 
+## Project Aim
+This project aims to solve a problem I face when making notes: efficiently
+creating and organizing notes when you have a large volume of resources and
+limited time.
+
+### The Problem with Existing Solutions
+<ol type="1">
+  <li>
+    <b><code>Highlighting</code></b> important points across different sources
+(web pages, PDFs, ebooks) makes it hard to search for a <b>specific point</b>
+in a centralized way.
+  </li>
+  <li>
+    <code>Manual Copy Pasta</code> is extremely slow with many steps involved,
+      <ol type="a">
+        <li>Select the point <i>with your mouse</i></li>
+        <li>Hit the <i><code>&lt;C-c&gt;</code></i></li>
+        <li>Switch to the editor</li>
+        <li>Hit the <i><code>&lt;C-v&gt;</code></i></li>
+        <li>Switch back to the resource</li>
+      </ol>
+    This may not look a lot but this breaks the flow and I do get annoyed hitting so
+many keystrokes.
+  </li>
+</ol>
+
+### The Solution
+What if life was as simple as:
+<ol type="a">
+  <li>Select the point <i>with your mouse (unfortunately)</i></li>
+  <li>Hit a <i><code>&lt;Key-Combo&gt;</code></i></li>
+</ol>
+By eliminating the redundant steps, <i><code>Haka</code></i> allows you to capture key points
+without breaking your concentration and also allows you to <i>fuzzy find</i> notes later.
+
 ## build
 Dependencies
 - *[`libevdev`](https://gitlab.freedesktop.org/libevdev/libevdev)*
 - *[`wl-clipboard`](https://github.com/bugaevc/wl-clipboard)*
 - *[`tofi`](https://github.com/philj56/tofi)*
 
-*[`build.sh`](https://github.com/horrifyingHorse/haka/blob/main/build.sh)* includes the installation of all the dependencies, but only for arch and debian based distros. For any other distribution, kindly install the aforementioned dependencies.
+*[`build.sh`](https://github.com/horrifyingHorse/haka/blob/main/build.sh)* includes the installation of all the dependencies, but only for arch and debian based distros. For any other distribution, kindly install the aforementioned dependencies. Or simply use the *based* [Makefile](https://github.com/horrifyingHorse/haka/blob/main/Makefile)
 
 ### For Arch / Debian based distros:
 From your favourite terminal, execute the *build.sh* script for installation
