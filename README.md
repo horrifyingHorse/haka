@@ -115,7 +115,7 @@ editor=$(which emacs)
 Now bind your action to a key in *`src/bindings.c`* using the `Bind(function, KEY_TOBIND...)` macro. Refer *[`linux/input-event-codes.h`](https://raw.githubusercontent.com/whot/libevdev/refs/heads/master/include/linux/input-event-codes.h)* for `KEY_NAME` macros.
 
 > [!IMPORTANT]
-> Do not use `open` or `close` on `haka->fdNotesFile`, since state is internally managed by [`eventHandlerEpilogue`](), use wrappers around it like [`openNotesFile`]() and [`closeNotesFile`]().
+> Do not use `open` or `close` on `haka->fdNotesFile`, since state is internally managed by [`eventHandlerEpilogue`](https://github.com/horrifyingHorse/haka/blob/620a1b572b9194239f026b97cd2ae47d12833bcf/include/hakaEventHandler.h#L55), use wrappers around it like [`openNotesFile`](https://github.com/horrifyingHorse/haka/blob/620a1b572b9194239f026b97cd2ae47d12833bcf/include/hakaEventHandler.h#L41) and [`closeNotesFile`](https://github.com/horrifyingHorse/haka/blob/620a1b572b9194239f026b97cd2ae47d12833bcf/include/hakaEventHandler.h#L42).
 
 
 | Key Combination | Binded Task |
