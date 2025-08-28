@@ -114,10 +114,15 @@ editor=$(which emacs)
 - To make custom keybinds, create a function with this prototype: `void func(struct hakaStatus *haka)`. Add its declaration in *`include/hakaEventHandler.h`* and implement it in *`src/hakaEventHandler.c`*.
 Now bind your action to a key in *`src/bindings.c`* using the `Bind(function, KEY_TOBIND...)` macro. Refer *[`linux/input-event-codes.h`](https://raw.githubusercontent.com/whot/libevdev/refs/heads/master/include/linux/input-event-codes.h)* for `KEY_NAME` macros.
 
+> [!IMPORTANT]
+> Do not use `open` or `close` on `haka->fdNotesFile`, since state is internally managed by [`eventHandlerEpilogue`](), use wrappers around it like [`openNotesFile`]() and [`closeNotesFile`]().
+
+
 | Key Combination | Binded Task |
 |-----------------|-------------|
 | *`Ctrl+Alt + C`* | Paste the current selection to the current file |
-| *`Ctrl+Alt + P`* | Paste the current selection as an unordered list item to the current file |
+| *`Ctrl+Alt + .`* | Paste the current selection as an unordered list item to the current file |
+| *`Ctrl+Alt + N`* | Send a Blank Line to the current file |
 | *`Ctrl+Alt + M`* | Opens the file selection menu |
 | *`Ctrl+Alt + O`* | Opens the file in neovim |
 

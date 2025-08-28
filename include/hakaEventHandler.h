@@ -34,10 +34,12 @@ void switchFile(struct hakaContext* haka);
 void writeToFile(struct hakaContext* haka);
 void writePointToFile(struct hakaContext* haka);
 void openFile(struct hakaContext* haka);
+void sendNewlineToFile(struct hakaContext* haka);
 
 // Event Handler Helper Functions
 FILE* getPrimarySelection(struct hakaContext* haka);
 int openNotesFile(struct hakaContext* haka);
+int closeNotesFile(struct hakaContext* haka);
 size_t writeFP2FD(struct hakaContext* haka);
 FILE* triggerTofi(struct hakaContext* haka);
 
@@ -58,6 +60,7 @@ FILE* triggerTofi(struct hakaContext* haka);
     }                              \
     if (haka->fdNotesFile > 0)     \
       close(haka->fdNotesFile);    \
+    haka->fdNotesFile = -1;        \
     haka->served = true;           \
   }
 

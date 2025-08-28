@@ -206,6 +206,16 @@ void openFile(struct hakaContext *haka) {
   eventHandlerEpilogue(haka);
 }
 
+void sendNewlineToFile(struct hakaContext *haka) {
+  contextCheck(haka);
+
+  openNotesFile(haka);
+  write(haka->fdNotesFile, "\n", 1);
+  closeNotesFile(haka);
+
+  eventHandlerEpilogue(haka);
+}
+
 FILE *getPrimarySelection(struct hakaContext *haka) {
   contextCheck(haka);
 
@@ -228,6 +238,13 @@ int openNotesFile(struct hakaContext *haka) {
     exit(1);
   }
   return haka->fdNotesFile;
+}
+
+int closeNotesFile(struct hakaContext *haka) {
+  contextCheck(haka);
+  int res = close(haka->fdNotesFile);
+  haka->fdNotesFile = (res == 0) ? -1 : haka->fdNotesFile;
+  return res;
 }
 
 size_t writeFP2FD(struct hakaContext *haka) {
