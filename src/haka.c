@@ -15,13 +15,7 @@
 #include "hakaEventHandler.h"
 #include "hakaUtils.h"
 
-extern char **environ;
-
 int main() {
-  for (int i = 0; environ[i] != NULL; i++) {
-    printf("%s\n", environ[i]);
-  }
-  // exit(1);
   // Need to disable full buffering and switch to
   // line buffering to make sure journal catches
   // all the logs.
